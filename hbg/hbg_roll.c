@@ -9,7 +9,7 @@ static uint8_t n2_count[12];
 static uint8_t n1n2_count[6][6];
 static uint8_t total_count[12];
 
-static roll_counter = 0;
+static uint8_t roll_counter = 0;
 static uint8_t n1_value[256];
 static uint8_t n2_value[256];
 

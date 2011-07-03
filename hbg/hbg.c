@@ -1,8 +1,9 @@
 #include "hbg_help.h"
 #include "hbg_roll.h"
+#include "hbg_io.h"
 #include "hbg_play.h"
 
-int main(int argc, char argv[]) {
+int main(int argc, char *argv[]) {
 
     randomize();
 

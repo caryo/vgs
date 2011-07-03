@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include "hbg_roll.h"
 
 static const char *play_result[11] = {
 
