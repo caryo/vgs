@@ -1,2 +1,2 @@
 gcc hbg*.c -o hbg
-gcc -DDEBUG -o engine engine.c
+gcc -Wall -pedantic -DDEBUG -o engine engine.c

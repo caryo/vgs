@@ -86,10 +86,12 @@ void initialize() {
 }
 
 void test_advance(int argc, char *argv[]) {
+#if DEBUG
    int i;
+   int r;
+#endif
    int a;
    int x;
-   int r;
    int b;
    int c;
    int r1;
@@ -131,14 +133,26 @@ void test_advance(int argc, char *argv[]) {
 
    if (x <= 0) {
       if (x == 0) {
+#if DEBUG
          r = advance(a, &b, &c, &r1, &r2);
+#else
+         advance(a, &b, &c, &r1, &r2);
+#endif
       }
       else if (x == -1) {
+#if DEBUG
          r = advance_x(a, 0, &b, &c, &r1, &r2);
+#else
+         advance_x(a, 0, &b, &c, &r1, &r2);
+#endif
       }
    }
    else {
+#if DEBUG
       r = advance_x(a, x, &b, &c, &r1, &r2);
+#else
+      advance_x(a, x, &b, &c, &r1, &r2);
+#endif
    }
 
 #if DEBUG
