@@ -1,8 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
+
+int advance_x(int a, int x, int *b, int *c, int *r1, int *r2);
 
 int advance(int a, int *b, int *c, int *r1, int *r2) {
-   int x, r;
+   int x = 0, r;
 
    /* special case when x is 0 and a is 7 - treat x as a 1 */
    if (a == 7 && x == 0) {
@@ -82,7 +85,7 @@ void initialize() {
    srand(time(NULL));
 }
 
-int test_advance(int argc, char *argv[]) {
+void test_advance(int argc, char *argv[]) {
    int i;
    int a;
    int x;
@@ -239,7 +242,7 @@ int result(int z, int a, int *o, int *h, int *r, int *c) {
    return z;
 }
 
-int side(int *r, int *h) {
+void side(int *r, int *h) {
    int z1, z2, z;
    int o;
 #if 0
@@ -291,7 +294,7 @@ int side(int *r, int *h) {
 #endif
 }
 
-int match() {
+void match() {
    int i;
    int ar = 0, ah = 0, ahi[9] = { 0 }, ari[9] = { 0 };
    int hr = 0, hh = 0, hhi[9] = { 0 }, hri[9] = { 0 };
