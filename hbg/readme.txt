@@ -1,2 +1,2 @@
-gcc hbg*.c -o hbg
-gcc -Wall -pedantic -DDEBUG -o engine engine.c
+# gcc hbg*.c -o hbg
+gcc -Wall -Wstrict-prototypes -ansi -pedantic -o engine engine.c

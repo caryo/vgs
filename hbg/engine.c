@@ -81,7 +81,7 @@ int advance_x(int a, int x, int *b, int *c, int *r1, int *r2) {
    return r;
 }
 
-void initialize() {
+void initialize(void) {
    srand(time(NULL));
 }
 
@@ -162,6 +162,49 @@ void test_advance(int argc, char *argv[]) {
    printf("c =%d (0x%02x)\n", c, c);
    printf("r2=%d (0x%02x)\n", r2, r2);
 #endif
+}
+
+char * result_code(int z) {
+   char *code;
+   switch(z) {
+      case 2:
+         code = "WP";
+         break;
+      case 3:
+         code = "T";
+         break;
+      case 4:
+         code = "D";
+         break;
+      case 5:
+         code = "W";
+         break;
+      case 6:
+         code = "GO";
+         break;
+      case 7:
+         code = "FO";
+         break;
+      case 8:
+         code = "S";
+         break;
+      case 9:
+         code = "SO";
+         break;
+      case 10:
+         code = "FB";
+         break;
+      case 11:
+         code = "DP";
+         break;
+      case 12:
+         code = "HR";
+         break;
+      default:
+         code = "X";
+         break;
+   }
+   return code;
 }
 
 int result(int z, int a, int *o, int *h, int *r, int *c) {
@@ -256,7 +299,7 @@ int result(int z, int a, int *o, int *h, int *r, int *c) {
    return z;
 }
 
-void side(int *r, int *h) {
+void side(int *r, int *h, int *li) {
    int z1, z2, z;
    int o;
 #if 0
@@ -297,6 +340,9 @@ void side(int *r, int *h) {
       result(z, a, &o, h, r, &c);
 #endif
 
+      printf("%02d: z:%d rc:%s\n", *li, z, result_code(z));
+
+      *li = *li + 1;
    } while (o<3);
 
 #if DEBUG
@@ -308,14 +354,16 @@ void side(int *r, int *h) {
 #endif
 }
 
-void match() {
+void match(void) {
    int i;
-   int ar = 0, ah = 0, ahi[9] = { 0 }, ari[9] = { 0 };
-   int hr = 0, hh = 0, hhi[9] = { 0 }, hri[9] = { 0 };
+   int ar = 0, ah = 0, ahi[9] = { 0 }, ari[9] = { 0 }, ali = 0;
+   int hr = 0, hh = 0, hhi[9] = { 0 }, hri[9] = { 0 }, hli = 0;
 
    for (i=0; i<9; i++) {
-      side(&ari[i], &ahi[i]);
-      side(&hri[i], &hhi[i]);
+      side(&ari[i], &ahi[i], &ali);
+      printf("i:%d, ari[i]:%d, ahi[i]:%d\n", i, ari[i], ahi[i]);
+      side(&hri[i], &hhi[i], &hli);
+      printf("i:%d, hri[i]:%d, hhi[i]:%d\n", i, hri[i], hhi[i]);
    }
    printf("A: ");
    for (i=0; i<9; i++) {
