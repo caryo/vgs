@@ -299,7 +299,7 @@ int result(int z, int a, int *o, int *h, int *r, int *c) {
    return z;
 }
 
-void side(int *r, int *h, int *li) {
+void side(int i, int b, int d, int *r, int *h, int *li) {
    int z1, z2, z;
    int o;
 #if 0
@@ -343,6 +343,12 @@ void side(int *r, int *h, int *li) {
       printf("%02d: z:%d rc:%s\n", *li, z, result_code(z));
 
       *li = *li + 1;
+
+      if (i == 8 && b == 1 && d + *r > 0) {
+         printf("i:%d, b:%d, o:%d, d:%d, *r:%d\n", i, b, o, d, *r);
+         printf("it happened\n");
+         break;
+      }
    } while (o<3);
 
 #if DEBUG
@@ -360,23 +366,39 @@ void match(void) {
    int hr = 0, hh = 0, hhi[9] = { 0 }, hri[9] = { 0 }, hli = 0;
 
    for (i=0; i<9; i++) {
-      side(&ari[i], &ahi[i], &ali);
+      side(i,0,0,&ari[i], &ahi[i], &ali);
       printf("i:%d, ari[i]:%d, ahi[i]:%d\n", i, ari[i], ahi[i]);
-      side(&hri[i], &hhi[i], &hli);
+      ar = ar + ari[i];
+      if (i==8 && hr > ar) {
+         hri[i] = -1;
+         break;
+      }
+      side(i,1,hr-ar,&hri[i], &hhi[i], &hli);
       printf("i:%d, hri[i]:%d, hhi[i]:%d\n", i, hri[i], hhi[i]);
+      hr = hr + hri[i];
    }
    printf("A: ");
    for (i=0; i<9; i++) {
       printf("%2d ", ari[i]);
+#if 0
       ar = ar + ari[i];
+#endif
       ah = ah + ahi[i];
    }
    printf("%5d %2d %2d\n", ar, ah, 0);
    printf("H: ");
    for (i=0; i<9; i++) {
-      printf("%2d ", hri[i]);
+      if (i==8 && hri[i] == -1) {
+         printf("%2c ", 'x');
+      }
+      else {
+         printf("%2d ", hri[i]);
+         hh = hh + hhi[i];
+      }
+#if 0
       hr = hr + hri[i];
       hh = hh + hhi[i];
+#endif
    }
    printf("%5d %2d %2d\n", hr, hh, 0);
 }
