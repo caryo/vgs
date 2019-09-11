@@ -1,8 +1,22 @@
+#include <assert.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 
-int advance_x(int a, int x, int *b, int *c, int *r1, int *r2);
+void   initialize(void);
+void   match(void);
+void   test_advance(int argc, char *argv[]);
+int    advance(int a, int *b, int *c, int *r1, int *r2);
+int    advance_x(int a, int x, int *b, int *c, int *r1, int *r2);
+void   side(int p[], int n, int i, int b, int d, int *r, int *h, int *li);
+int    roll(void);
+long   myround(double x);
+void   initrand(int p[], int n);
+int    genrand(int p[], int n);
+int    maprand(int p[], int n, int z0);
+int    result(int z, int a, int *o, int *h, int *r, int *c);
+char * result_code(int z);
 
 int advance(int a, int *b, int *c, int *r1, int *r2) {
    int x = 0, r;
@@ -299,8 +313,89 @@ int result(int z, int a, int *o, int *h, int *r, int *c) {
    return z;
 }
 
-void side(int i, int b, int d, int *r, int *h, int *li) {
+int roll(void) {
    int z1, z2, z;
+
+   z1 = (rand() % 6) + 1;
+   z2 = (rand() % 6) + 1;
+
+   z = z1 + z2;
+
+#if DEBUG
+   printf("z1=%d z2=%d z=%2d\n", z1, z2, z);
+#endif
+
+   return z;
+}
+
+long myround(double x) {
+   assert(x >= LONG_MIN-0.5);
+   assert(x <= LONG_MAX+0.5);
+   if (x >= 0)
+      return (long) (x+0.5);
+   return (long) (x-0.5);
+}
+
+void initrand(int p[], int n) {
+   int i;
+   float p0, t0 = 0, t = 0;
+
+   for (i=0; i<6; i++) {
+      p0 = (((float) ((i+1)*2) / 36) * 1000) / 2.;
+      t += p0;
+      p[i] = myround(t);
+      if (i < 4) {
+         t0 += p0;
+         p[9-i] = myround(1000. - t0);
+#if DEBUG
+         printf("i:%2d, p0: %7.3f, p[%d]: %4d, 1000-t0: %7.3f, p[%d]: %4d\n", i, p0, i, p[i], 1000. - t0, 9-i, p[9-i]);
+#endif
+      }
+      else {
+#if DEBUG
+         printf("i:%2d, p0: %7.3f, p[%d]: %4d\n", i, p0, i, p[i]);
+#endif
+      }
+   }
+
+#if DEBUG
+   for (i=0; i<n; i++) {
+      printf("i:%2d, p[%d]: %4d\n", i, i, p[i]);
+   }
+#endif
+}
+
+int maprand(int p[], int n, int z0) {
+   int i;
+
+   for (i=0; i<n; i++) {
+      if (z0 <= p[i]) {
+         break;
+      }
+   }
+   return i;
+}
+
+int genrand(int p[], int n) {
+   int z, z0;
+
+   z0 = (rand() % 1000) + 1;
+
+   z = maprand(p,n,z0);
+   z += 2;
+#if DEBUG
+   printf("genrand: z0: %4d, z: %2d\n", z0, z);
+#endif
+
+   return z;
+}
+
+void side(int p[], int n, int i, int b, int d, int *r, int *h, int *li) {
+#if 0
+   int z1, z2, z;
+#else
+   int z;
+#endif
    int o;
 #if 0
    int h, r;
@@ -317,13 +412,14 @@ void side(int i, int b, int d, int *r, int *h, int *li) {
    do {
       a =  c;
 
+#if 0
       z1 = (rand() % 6) + 1;
       z2 = (rand() % 6) + 1;
 
       z = z1 + z2;
-
-#if DEBUG
-   printf("z1=%d z2=%d z=%2d\n", z1, z2, z);
+      z = roll();
+#else
+      z = genrand(p, n);
 #endif
 
 #if DEBUG
@@ -344,9 +440,9 @@ void side(int i, int b, int d, int *r, int *h, int *li) {
 
       *li = *li + 1;
 
-      if (i == 8 && b == 1 && d + *r > 0) {
+      if (i >= 8 && b == 1 && d + *r > 0) {
          printf("i:%d, b:%d, o:%d, d:%d, *r:%d\n", i, b, o, d, *r);
-         printf("it happened\n");
+         printf("walk-off win!\n");
          break;
       }
    } while (o<3);
@@ -364,16 +460,20 @@ void match(void) {
    int i;
    int ar = 0, ah = 0, ahi[9] = { 0 }, ari[9] = { 0 }, ali = 0;
    int hr = 0, hh = 0, hhi[9] = { 0 }, hri[9] = { 0 }, hli = 0;
+   int p[10];
+   int n = sizeof(p)/sizeof(int);
+
+   initrand(p, n);
 
    for (i=0; i<9; i++) {
-      side(i,0,0,&ari[i], &ahi[i], &ali);
+      side(p, n, i,0,0,&ari[i], &ahi[i], &ali);
       printf("i:%d, ari[i]:%d, ahi[i]:%d\n", i, ari[i], ahi[i]);
       ar = ar + ari[i];
       if (i==8 && hr > ar) {
          hri[i] = -1;
          break;
       }
-      side(i,1,hr-ar,&hri[i], &hhi[i], &hli);
+      side(p, n, i,1,hr-ar,&hri[i], &hhi[i], &hli);
       printf("i:%d, hri[i]:%d, hhi[i]:%d\n", i, hri[i], hhi[i]);
       hr = hr + hri[i];
    }
