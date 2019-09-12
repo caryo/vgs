@@ -1,0 +1,6 @@
+use seed value 1568286903 to simulate a walk-off win in the bottom of the ninth
+use seed value 1568288188 to simulate a walk-off win in the bottom of the ninth
+use seed value 1568287845 to simulate a win in the bottom of the ninth
+use seed value 1568288294 to simulate a win by away team in top of the tenth
+use seed value 1568288503 to simulate a win by home team in bottom of the tenth
+use seed value 1568288408 to simulate a win by away team in top of the eleventh

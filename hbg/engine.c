@@ -2,9 +2,11 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
-void   initialize(void);
+void   initialize(int seed);
+void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
 void   match(void);
 void   test_advance(int argc, char *argv[]);
 int    advance(int a, int *b, int *c, int *r1, int *r2);
@@ -95,8 +97,16 @@ int advance_x(int a, int x, int *b, int *c, int *r1, int *r2) {
    return r;
 }
 
-void initialize(void) {
-   srand(time(NULL));
+void initialize(int seed) {
+   if (seed < 0) {
+      int seed0 = time(NULL);
+      printf("seed0: %d\n", seed0);
+      seed = seed0;
+   }
+   else {
+      printf("seed: %d\n", seed);
+   }
+   srand(seed);
 }
 
 void test_advance(int argc, char *argv[]) {
@@ -118,13 +128,13 @@ void test_advance(int argc, char *argv[]) {
    printf("\n");
 #endif
 
-   if (argc <= 2) {
-      printf("error: argc=%d, expected at least 2 integer values as input - exiting\n", argc);
+   if (argc <= 3) {
+      printf("error: argc=%d, expected at least 3 integer values as input - exiting\n", argc);
       exit(1);
    }
 
-   a = atoi(argv[1]);
-   x = atoi(argv[2]);
+   a = atoi(argv[2]);
+   x = atoi(argv[3]);
 
    if (a < 0) {
       a = 0;
@@ -456,44 +466,122 @@ void side(int p[], int n, int i, int b, int d, int *r, int *h, int *li) {
 #endif
 }
 
+void initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]) {
+   if (*ahiP != NULL) {
+      *ahiP = realloc(*ahiP,sizeof(int)*c);
+   }
+   else {
+      *ahiP = malloc(sizeof(int)*c);
+      memset(*ahiP,0,sizeof(int)*c);
+   }
+   if (*ariP != NULL) {
+      *ariP = realloc(*ariP,sizeof(int)*c);
+   }
+   else {
+      *ariP = malloc(sizeof(int)*c);
+      memset(*ariP,0,sizeof(int)*c);
+   }
+   if (*hhiP != NULL) {
+      *hhiP = realloc(*hhiP,sizeof(int)*c);
+   }
+   else {
+      *hhiP = malloc(sizeof(int)*c);
+      memset(*hhiP,0,sizeof(int)*c);
+   }
+   if (*hriP != NULL) {
+      *hriP = realloc(*hriP,sizeof(int)*c);
+   }
+   else {
+      *hriP = malloc(sizeof(int)*c);
+      memset(*hriP,0,sizeof(int)*c);
+   }
+}
+
 void match(void) {
    int i;
+#if 0
    int ar = 0, ah = 0, ahi[9] = { 0 }, ari[9] = { 0 }, ali = 0;
    int hr = 0, hh = 0, hhi[9] = { 0 }, hri[9] = { 0 }, hli = 0;
+#else
+   int ar = 0, ah = 0, ali = 0, *ahiP = NULL, *ariP = NULL;
+   int hr = 0, hh = 0, hli = 0, *hhiP = NULL, *hriP = NULL;
+#endif
    int p[10];
    int n = sizeof(p)/sizeof(int);
+   int in = 9;
+   int c = 2;
 
+   initmem(c, &ahiP, &ariP, &hhiP, &hriP);
    initrand(p, n);
 
-   for (i=0; i<9; i++) {
-      side(p, n, i,0,0,&ari[i], &ahi[i], &ali);
-      printf("i:%d, ari[i]:%d, ahi[i]:%d\n", i, ari[i], ahi[i]);
-      ar = ar + ari[i];
-      if (i==8 && hr > ar) {
-         hri[i] = -1;
+   do {
+      if (i >= c) {
+         printf("initmem: i:%d, c:%d\n", i, c);
+         c += c/2;
+         initmem(c, &ahiP, &ariP, &hhiP, &hriP);
+      }
+
+      side(p, n, i,0,0,&ariP[i], &ahiP[i], &ali);
+      printf("i:%d, ariP[i]:%d, ahiP[i]:%d\n", i, ariP[i], ahiP[i]);
+      ar = ar + ariP[i];
+      if (i>=8 && hr > ar) {
+         hriP[i] = -1;
          break;
       }
-      side(p, n, i,1,hr-ar,&hri[i], &hhi[i], &hli);
-      printf("i:%d, hri[i]:%d, hhi[i]:%d\n", i, hri[i], hhi[i]);
-      hr = hr + hri[i];
+      printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
+
+      side(p, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli);
+      printf("i:%d, hriP[i]:%d, hhiP[i]:%d\n", i, hriP[i], hhiP[i]);
+      hr = hr + hriP[i];
+      printf("end of side: bottom, i:%d, ar:%d, hr:%d\n", i, ar, hr);
+
+      if (i>=8) {
+         if (hr == ar) {
+            printf("extra: i:%d, ar:%d, hr:%d\n", i, ar, hr);
+         }
+         else {
+            printf("end of game: i:%d, ar:%d, hr:%d\n", i, ar, hr);
+            break;
+         }
+      }
+      i++;
    }
+   while (1);
+
+   in = i+1;
+
+   printf("T: ");
+   for (i=0; i<in; i++) {
+      printf("%2d ", i+1);
+      if (((i+1) % 3) == 0) {
+         printf(" ");
+      }
+   }
+   printf("%5c %2c %2c\n", 'R', 'H', 'E');
+
    printf("A: ");
-   for (i=0; i<9; i++) {
-      printf("%2d ", ari[i]);
+   for (i=0; i<in; i++) {
+      printf("%2d ", ariP[i]);
+      if (((i+1) % 3) == 0) {
+         printf(" ");
+      }
 #if 0
       ar = ar + ari[i];
 #endif
-      ah = ah + ahi[i];
+      ah = ah + ahiP[i];
    }
    printf("%5d %2d %2d\n", ar, ah, 0);
    printf("H: ");
-   for (i=0; i<9; i++) {
-      if (i==8 && hri[i] == -1) {
+   for (i=0; i<in; i++) {
+      if (i>=8 && hriP[i] == -1) {
          printf("%2c ", 'x');
       }
       else {
-         printf("%2d ", hri[i]);
-         hh = hh + hhi[i];
+         printf("%2d ", hriP[i]);
+         hh = hh + hhiP[i];
+      }
+      if (((i+1) % 3) == 0) {
+         printf(" ");
       }
 #if 0
       hr = hr + hri[i];
@@ -506,10 +594,17 @@ void match(void) {
 int main(int argc, char *argv[]) {
 
    if (argc > 1) {
-      test_advance(argc, argv);
+      int v = atoi(argv[1]);
+      if (v == -1) {
+         test_advance(argc, argv);
+      }
+      else {
+         initialize(v);
+         match();
+      }
    }
    else {
-      initialize();
+      initialize(-1);
       match();
    }
 
