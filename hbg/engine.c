@@ -18,6 +18,10 @@ struct statdata {
    int gdp;
 };
 
+struct probdata {
+   int p[10];
+};
+
 int    advance(int a, int *b, int *c, int *r1, int *r2);
 int    advance_x(int a, int x, int *b, int *c, int *r1, int *r2);
 void   initialize(int seed);
@@ -25,18 +29,13 @@ void   test_advance(int argc, char *argv[]);
 char * result_code(int z);
 int    result(int z, int a, int *o, int *h, int *r, int *c, int *gdp);
 void   stat(struct statdata stats[], int li, int result, int gdp);
-#if defined(USE_DICE)
 int    roll(void);
-void   side(int i, int b, int d, int *r, int *h, int *li,
-            struct statdata statp[]);
-#else
 long   myround(double x);
 void   initrand(int p[], int n);
 int    maprand(int p[], int n, int z0);
 int    genrand(int p[], int n);
-void   side(int p[], int n, int i, int b, int d, int *r, int *h, int *li,
+void   side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
             struct statdata statp[]);
-#endif
 void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
 void   match(void);
 
@@ -346,7 +345,6 @@ int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp) {
    return z;
 }
 
-#if defined(USE_DICE)
 int roll(void) {
    int z1, z2, z;
 
@@ -361,9 +359,7 @@ int roll(void) {
 
    return z;
 }
-#endif
 
-#if !defined(USE_DICE)
 long myround(double x) {
    assert(x >= LONG_MIN-0.5);
    assert(x <= LONG_MAX+0.5);
@@ -413,7 +409,9 @@ int maprand(int p[], int n, int z0) {
 }
 
 int genrand(int p[], int n) {
-   int z, z0;
+   int z;
+#if !defined(USE_DICE)
+   int z0;
 
    z0 = (rand() % 1000) + 1;
 
@@ -422,10 +420,12 @@ int genrand(int p[], int n) {
 #if DEBUG
    printf("genrand: z0: %4d, z: %2d\n", z0, z);
 #endif
+#else
+   z = roll();
+#endif
 
    return z;
 }
-#endif
 
 void stat(struct statdata stats[], int li, int result, int gdp) {
    int idx = li % 9;
@@ -474,6 +474,7 @@ void stat(struct statdata stats[], int li, int result, int gdp) {
       case 12:
          (stats[idx].pa)++;
          (stats[idx].ab)++;
+         (stats[idx].h)++;
          (stats[idx].hr)++;
       break;
       default:
@@ -481,18 +482,14 @@ void stat(struct statdata stats[], int li, int result, int gdp) {
    }
 }
 
-#if !defined(USE_DICE)
-void side(int p[], int n, int i, int b, int d, int *r, int *h, int *li,
+void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
           struct statdata statp[])
-#else
-void side(int i, int b, int d, int *r, int *h, int *li,
-          struct statdata statp[])
-#endif
 {
    int z;
    int o;
    int a, c;
    int gdp;
+   int idx;
 
    o = 0;
    c = 0;
@@ -500,11 +497,9 @@ void side(int i, int b, int d, int *r, int *h, int *li,
    do {
       a =  c;
 
-#if !defined(USE_DICE)
-      z = genrand(p, n);
-#else
-      z = roll();
-#endif
+      idx = *li % 9;
+
+      z = genrand(p[idx].p, n);
 
 #if DEBUG
       printf("a=0x%02x o=%d h=%2d r=%2d z=%2d\n", a, o, *h, *r, z);
@@ -512,7 +507,7 @@ void side(int i, int b, int d, int *r, int *h, int *li,
 
       result(z, a, &o, h, r, &c, &gdp);
 
-      printf("%02d: z:%d rc:%s\n", *li, z, result_code(z));
+      printf("%02d (%d): i:%-2d gdp:%d z:%-2d rc:%s\n", *li, idx+1, i+1, gdp, z, result_code(z));
       stat(statp,*li,z,gdp);
 
       if (z != 2 && z != 10) {
@@ -564,23 +559,24 @@ void initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]) {
 
 void match(void) {
    int i = 0;
-   int ar = 0, ah = 0, ali = 0, *ahiP = NULL, *ariP = NULL;
-   int hr = 0, hh = 0, hli = 0, *hhiP = NULL, *hriP = NULL;
+   int ar = 0, ah = 0, ali = 100, *ahiP = NULL, *ariP = NULL;
+   int hr = 0, hh = 0, hli = 200, *hhiP = NULL, *hriP = NULL;
    struct statdata astat[9] = { 0 };
    struct statdata hstat[9] = { 0 };
-#if !defined(USE_DICE)
-   int p[10];
-   int n = sizeof(p)/sizeof(int);
-#endif
+   struct probdata ap[9];
+   struct probdata hp[9];
+   int n = sizeof(ap[0].p)/sizeof(int);
    int in = 9;
    int c = 2;
    int s_pa, s_ab, s_h, s_s, s_d, s_t, s_hr, s_bb, s_so, s_gdp;
 
    initmem(c, &ahiP, &ariP, &hhiP, &hriP);
-#if !defined(USE_DICE)
-   initrand(p, n);
-#endif
+   for (i=0; i<9; i++) {
+      initrand(ap[i].p, n);
+      initrand(hp[i].p, n);
+   }
 
+   i = 0;
    do {
       if (i >= c) {
          printf("initmem: i:%d, c:%d\n", i, c);
@@ -588,11 +584,7 @@ void match(void) {
          initmem(c, &ahiP, &ariP, &hhiP, &hriP);
       }
 
-#if !defined(USE_DICE)
-      side(p, n, i,0,0,&ariP[i], &ahiP[i], &ali, astat);
-#else
-      side(i,0,0,&ariP[i], &ahiP[i], &ali, astat);
-#endif
+      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, astat);
       printf("i:%d, ariP[i]:%d, ahiP[i]:%d\n", i, ariP[i], ahiP[i]);
       ar = ar + ariP[i];
       if (i>=8 && hr > ar) {
@@ -601,11 +593,7 @@ void match(void) {
       }
       printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
 
-#if !defined(USE_DICE)
-      side(p, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hstat);
-#else
-      side(i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hstat);
-#endif
+      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hstat);
       printf("i:%d, hriP[i]:%d, hhiP[i]:%d\n", i, hriP[i], hhiP[i]);
       hr = hr + hriP[i];
       printf("end of side: bottom, i:%d, ar:%d, hr:%d\n", i, ar, hr);
@@ -664,7 +652,7 @@ void match(void) {
      "#", "PA", "AB", "H", "S", "D", "T", "HR", "BB", "SO", "GDP");
    for(i=0; i<9; i++) {
       printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
-         i, astat[i].pa, astat[i].ab, astat[i].h, astat[i].s,
+         i+1, astat[i].pa, astat[i].ab, astat[i].h, astat[i].s,
          astat[i].d, astat[i].t, astat[i].hr, astat[i].bb,
          astat[i].so, astat[i].gdp);
       s_pa += astat[i].pa;
@@ -687,7 +675,7 @@ void match(void) {
      "#", "PA", "AB", "H", "S", "D", "T", "HR", "BB", "SO", "GDP");
    for(i=0; i<9; i++) {
       printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
-         i, hstat[i].pa, hstat[i].ab, hstat[i].h, hstat[i].s,
+         i+1, hstat[i].pa, hstat[i].ab, hstat[i].h, hstat[i].s,
          hstat[i].d, hstat[i].t, hstat[i].hr, hstat[i].bb,
          hstat[i].so, hstat[i].gdp);
       s_pa += hstat[i].pa;
