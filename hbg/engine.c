@@ -5,20 +5,40 @@
 #include <string.h>
 #include <time.h>
 
-void   initialize(int seed);
-void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
-void   match(void);
-void   test_advance(int argc, char *argv[]);
+struct statdata {
+   int pa;
+   int ab;
+   int h;
+   int s;
+   int d;
+   int t;
+   int hr;
+   int bb;
+   int so;
+   int gdp;
+};
+
 int    advance(int a, int *b, int *c, int *r1, int *r2);
 int    advance_x(int a, int x, int *b, int *c, int *r1, int *r2);
-void   side(int p[], int n, int i, int b, int d, int *r, int *h, int *li);
+void   initialize(int seed);
+void   test_advance(int argc, char *argv[]);
+char * result_code(int z);
+int    result(int z, int a, int *o, int *h, int *r, int *c, int *gdp);
+void   stat(struct statdata stats[], int li, int result, int gdp);
+#if defined(USE_DICE)
 int    roll(void);
+void   side(int i, int b, int d, int *r, int *h, int *li,
+            struct statdata statp[]);
+#else
 long   myround(double x);
 void   initrand(int p[], int n);
-int    genrand(int p[], int n);
 int    maprand(int p[], int n, int z0);
-int    result(int z, int a, int *o, int *h, int *r, int *c);
-char * result_code(int z);
+int    genrand(int p[], int n);
+void   side(int p[], int n, int i, int b, int d, int *r, int *h, int *li,
+            struct statdata statp[]);
+#endif
+void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
+void   match(void);
 
 int advance(int a, int *b, int *c, int *r1, int *r2) {
    int x = 0, r;
@@ -231,13 +251,15 @@ char * result_code(int z) {
    return code;
 }
 
-int result(int z, int a, int *o, int *h, int *r, int *c) {
+int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp) {
    int x, f, w;
    int b, r1, r2;
 
    x = -1;
    f = 0;
    w = 0;
+
+   *gdp = 0;
 
    switch(z) {
       case  2:
@@ -310,6 +332,7 @@ int result(int z, int a, int *o, int *h, int *r, int *c) {
             *o = *o + 1;
             if (*o < 3) {
                *o = *o + 1;
+               *gdp = 1;
             }
          }
       }
@@ -323,6 +346,7 @@ int result(int z, int a, int *o, int *h, int *r, int *c) {
    return z;
 }
 
+#if defined(USE_DICE)
 int roll(void) {
    int z1, z2, z;
 
@@ -337,7 +361,9 @@ int roll(void) {
 
    return z;
 }
+#endif
 
+#if !defined(USE_DICE)
 long myround(double x) {
    assert(x >= LONG_MIN-0.5);
    assert(x <= LONG_MAX+0.5);
@@ -399,56 +425,99 @@ int genrand(int p[], int n) {
 
    return z;
 }
+#endif
 
-void side(int p[], int n, int i, int b, int d, int *r, int *h, int *li) {
-#if 0
-   int z1, z2, z;
+void stat(struct statdata stats[], int li, int result, int gdp) {
+   int idx = li % 9;
+   switch (result) {
+      case 2:
+      break;
+      case 3:
+         (stats[idx].pa)++;
+         (stats[idx].ab)++;
+         (stats[idx].h)++;
+         (stats[idx].t)++;
+      break;
+      case 4:
+         (stats[idx].pa)++;
+         (stats[idx].ab)++;
+         (stats[idx].h)++;
+         (stats[idx].d)++;
+      break;
+      case 5:
+         (stats[idx].pa)++;
+         (stats[idx].bb)++;
+      break;
+      case 6:
+      case 7:
+         (stats[idx].pa)++;
+         (stats[idx].ab)++;
+      break;
+      case 8:
+         (stats[idx].pa)++;
+         (stats[idx].ab)++;
+         (stats[idx].h)++;
+         (stats[idx].s)++;
+      break;
+      case 9:
+         (stats[idx].pa)++;
+         (stats[idx].ab)++;
+         (stats[idx].so)++;
+      break;
+      case 10:
+      break;
+      case 11:
+         (stats[idx].pa)++;
+         (stats[idx].ab)++;
+         (stats[idx].gdp) += gdp;
+      break;
+      case 12:
+         (stats[idx].pa)++;
+         (stats[idx].ab)++;
+         (stats[idx].hr)++;
+      break;
+      default:
+      break;
+   }
+}
+
+#if !defined(USE_DICE)
+void side(int p[], int n, int i, int b, int d, int *r, int *h, int *li,
+          struct statdata statp[])
 #else
+void side(int i, int b, int d, int *r, int *h, int *li,
+          struct statdata statp[])
+#endif
+{
    int z;
-#endif
    int o;
-#if 0
-   int h, r;
-#endif
    int a, c;
+   int gdp;
 
-#if 0
-   r = 0;
-   h = 0;
-#endif
    o = 0;
    c = 0;
 
    do {
       a =  c;
 
-#if 0
-      z1 = (rand() % 6) + 1;
-      z2 = (rand() % 6) + 1;
-
-      z = z1 + z2;
-      z = roll();
-#else
+#if !defined(USE_DICE)
       z = genrand(p, n);
+#else
+      z = roll();
 #endif
 
 #if DEBUG
-#if 0
-      printf("a=0x%02x o=%d h=%2d r=%2d z=%2d\n", a, o, h, r, z);
-#else
       printf("a=0x%02x o=%d h=%2d r=%2d z=%2d\n", a, o, *h, *r, z);
 #endif
-#endif
 
-#if 0
-      result(z, a, &o, &h, &r, &c);
-#else
-      result(z, a, &o, h, r, &c);
-#endif
+      result(z, a, &o, h, r, &c, &gdp);
 
       printf("%02d: z:%d rc:%s\n", *li, z, result_code(z));
+      stat(statp,*li,z,gdp);
 
-      *li = *li + 1;
+      if (z != 2 && z != 10) {
+         *li = *li + 1;
+      }
 
       if (i >= 8 && b == 1 && d + *r > 0) {
          printf("i:%d, b:%d, o:%d, d:%d, *r:%d\n", i, b, o, d, *r);
@@ -458,11 +527,7 @@ void side(int p[], int n, int i, int b, int d, int *r, int *h, int *li) {
    } while (o<3);
 
 #if DEBUG
-#if 0
-   printf("a=0x%02x o=%d h=%2d r=%2d\n", a, o, h, r);
-#else
    printf("a=0x%02x o=%d h=%2d r=%2d\n", a, o, *h, *r);
-#endif
 #endif
 }
 
@@ -498,21 +563,23 @@ void initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]) {
 }
 
 void match(void) {
-   int i;
-#if 0
-   int ar = 0, ah = 0, ahi[9] = { 0 }, ari[9] = { 0 }, ali = 0;
-   int hr = 0, hh = 0, hhi[9] = { 0 }, hri[9] = { 0 }, hli = 0;
-#else
+   int i = 0;
    int ar = 0, ah = 0, ali = 0, *ahiP = NULL, *ariP = NULL;
    int hr = 0, hh = 0, hli = 0, *hhiP = NULL, *hriP = NULL;
-#endif
+   struct statdata astat[9] = { 0 };
+   struct statdata hstat[9] = { 0 };
+#if !defined(USE_DICE)
    int p[10];
    int n = sizeof(p)/sizeof(int);
+#endif
    int in = 9;
    int c = 2;
+   int s_pa, s_ab, s_h, s_s, s_d, s_t, s_hr, s_bb, s_so, s_gdp;
 
    initmem(c, &ahiP, &ariP, &hhiP, &hriP);
+#if !defined(USE_DICE)
    initrand(p, n);
+#endif
 
    do {
       if (i >= c) {
@@ -521,7 +588,11 @@ void match(void) {
          initmem(c, &ahiP, &ariP, &hhiP, &hriP);
       }
 
-      side(p, n, i,0,0,&ariP[i], &ahiP[i], &ali);
+#if !defined(USE_DICE)
+      side(p, n, i,0,0,&ariP[i], &ahiP[i], &ali, astat);
+#else
+      side(i,0,0,&ariP[i], &ahiP[i], &ali, astat);
+#endif
       printf("i:%d, ariP[i]:%d, ahiP[i]:%d\n", i, ariP[i], ahiP[i]);
       ar = ar + ariP[i];
       if (i>=8 && hr > ar) {
@@ -530,7 +601,11 @@ void match(void) {
       }
       printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
 
-      side(p, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli);
+#if !defined(USE_DICE)
+      side(p, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hstat);
+#else
+      side(i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hstat);
+#endif
       printf("i:%d, hriP[i]:%d, hhiP[i]:%d\n", i, hriP[i], hhiP[i]);
       hr = hr + hriP[i];
       printf("end of side: bottom, i:%d, ar:%d, hr:%d\n", i, ar, hr);
@@ -565,9 +640,6 @@ void match(void) {
       if (((i+1) % 3) == 0) {
          printf(" ");
       }
-#if 0
-      ar = ar + ari[i];
-#endif
       ah = ah + ahiP[i];
    }
    printf("%5d %2d %2d\n", ar, ah, 0);
@@ -583,12 +655,54 @@ void match(void) {
       if (((i+1) % 3) == 0) {
          printf(" ");
       }
-#if 0
-      hr = hr + hri[i];
-      hh = hh + hhi[i];
-#endif
    }
    printf("%5d %2d %2d\n", hr, hh, 0);
+
+   s_pa=0; s_ab=0; s_h=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_bb=0; s_so=0; s_gdp=0;
+   printf("Away Team:\n");
+   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
+     "#", "PA", "AB", "H", "S", "D", "T", "HR", "BB", "SO", "GDP");
+   for(i=0; i<9; i++) {
+      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+         i, astat[i].pa, astat[i].ab, astat[i].h, astat[i].s,
+         astat[i].d, astat[i].t, astat[i].hr, astat[i].bb,
+         astat[i].so, astat[i].gdp);
+      s_pa += astat[i].pa;
+      s_ab += astat[i].ab;
+      s_h += astat[i].h;
+      s_s += astat[i].s;
+      s_d += astat[i].d;
+      s_t += astat[i].t;
+      s_hr += astat[i].hr;
+      s_bb += astat[i].bb;
+      s_so += astat[i].so;
+      s_gdp += astat[i].gdp;
+   }
+   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+      s_pa, s_ab, s_h, s_s, s_d, s_t, s_hr, s_bb, s_so, s_gdp);
+
+   s_pa=0; s_ab=0; s_h=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_bb=0; s_so=0; s_gdp=0;
+   printf("Home Team:\n");
+   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
+     "#", "PA", "AB", "H", "S", "D", "T", "HR", "BB", "SO", "GDP");
+   for(i=0; i<9; i++) {
+      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+         i, hstat[i].pa, hstat[i].ab, hstat[i].h, hstat[i].s,
+         hstat[i].d, hstat[i].t, hstat[i].hr, hstat[i].bb,
+         hstat[i].so, hstat[i].gdp);
+      s_pa += hstat[i].pa;
+      s_ab += hstat[i].ab;
+      s_h += hstat[i].h;
+      s_s += hstat[i].s;
+      s_d += hstat[i].d;
+      s_t += hstat[i].t;
+      s_hr += hstat[i].hr;
+      s_bb += hstat[i].bb;
+      s_so += hstat[i].so;
+      s_gdp += hstat[i].gdp;
+   }
+   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+      s_pa, s_ab, s_h, s_s, s_d, s_t, s_hr, s_bb, s_so, s_gdp);
 }
 
 int main(int argc, char *argv[]) {
