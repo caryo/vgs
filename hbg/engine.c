@@ -40,7 +40,7 @@ void   initrand(int p[], int n);
 int    maprand(int p[], int n, int z0);
 int    genrand(int p[], int n);
 void   side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
-            int li_base, struct statdata statp[]);
+            int li_base, struct statdata statp[], int *lob);
 void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
 void   match(void);
 
@@ -624,7 +624,7 @@ void stat(struct statdata stats[], int idx, int result, int gdp, int runs) {
 }
 
 void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
-          int li_base, struct statdata statp[])
+          int li_base, struct statdata statp[], int *lob)
 {
    int j;
    int z;
@@ -688,8 +688,15 @@ void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *
       }
    } while (o<3);
 
+   *lob = 0;
+   for (j=0; j<2; j++) {
+      if (ob[j] >= 0) {
+         (*lob)++;
+      }
+   }
+
 #if DEBUG
-   printf("a=0x%02x o=%d h=%2d r=%2d\n", a, o, *h, *r);
+   printf("a=0x%02x o=%d h=%2d r=%2d, lob=%2d\n", a, o, *h, *r, *lob);
 #endif
 }
 
@@ -726,8 +733,8 @@ void initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]) {
 
 void match(void) {
    int i = 0;
-   int ar = 0, ah = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
-   int hr = 0, hh = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
+   int ar = 0, ah = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
+   int hr = 0, hh = 0, hlo = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
    struct statdata astat[9] = { 0 };
    struct statdata hstat[9] = { 0 };
    struct probdata ap[9];
@@ -736,6 +743,7 @@ void match(void) {
    int in = 9;
    int c = 2;
    int s_pa, s_ab, s_r, s_rbi, s_h, s_s, s_d, s_t, s_hr, s_bb, s_so, s_gdp;
+   int alob, hlob;
 
    initmem(c, &ahiP, &ariP, &hhiP, &hriP);
    for (i=0; i<9; i++) {
@@ -751,8 +759,9 @@ void match(void) {
          initmem(c, &ahiP, &ariP, &hhiP, &hriP);
       }
 
-      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, astat);
-      printf("i:%d, ariP[i]:%d, ahiP[i]:%d\n", i, ariP[i], ahiP[i]);
+      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, astat, &alob);
+      printf("i:%d, ariP[i]:%d, ahiP[i]:%d, alob:%d\n", i, ariP[i], ahiP[i], alob);
+      alo = alo + alob;
       ar = ar + ariP[i];
       if (i>=8 && hr > ar) {
          hriP[i] = -1;
@@ -760,8 +769,9 @@ void match(void) {
       }
       printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
 
-      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hstat);
-      printf("i:%d, hriP[i]:%d, hhiP[i]:%d\n", i, hriP[i], hhiP[i]);
+      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hstat, &hlob);
+      printf("i:%d, hriP[i]:%d, hhiP[i]:%d, hlob:%d\n", i, hriP[i], hhiP[i], hlob);
+      hlo = hlo + hlob;
       hr = hr + hriP[i];
       printf("end of side: bottom, i:%d, ar:%d, hr:%d\n", i, ar, hr);
 
@@ -787,7 +797,7 @@ void match(void) {
          printf(" ");
       }
    }
-   printf("%5c %2c %2c\n", 'R', 'H', 'E');
+   printf("%5c %2c %2c %5s\n", 'R', 'H', 'E', "LOB");
 
    printf("A: ");
    for (i=0; i<in; i++) {
@@ -797,7 +807,7 @@ void match(void) {
       }
       ah = ah + ahiP[i];
    }
-   printf("%5d %2d %2d\n", ar, ah, 0);
+   printf("%5d %2d %2d %5d\n", ar, ah, 0, alo);
    printf("H: ");
    for (i=0; i<in; i++) {
       if (i>=8 && hriP[i] == -1) {
@@ -811,7 +821,7 @@ void match(void) {
          printf(" ");
       }
    }
-   printf("%5d %2d %2d\n", hr, hh, 0);
+   printf("%5d %2d %2d %5d\n", hr, hh, 0, hlo);
 
    s_pa=0; s_ab=0; s_r=0; s_h=0; s_rbi=0; s_bb=0; s_so=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_gdp=0;
    printf("Away Team:\n");
