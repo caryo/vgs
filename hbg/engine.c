@@ -13,6 +13,7 @@ struct statdata {
    int rbi;
    int bb;
    int so;
+   int lob;
    int s;
    int d;
    int t;
@@ -31,9 +32,9 @@ int    advance_x(int a, int x, int *b, int *c, int *r1, int *r2);
 void   initialize(int seed);
 void   test_advance(int argc, char *argv[]);
 char * result_code(int z);
-int    result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int ob[], int rli[]);
+int    result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int ob[], int rli[], int *rlo);
 void   statrun(struct statdata stats[], int idx, int result);
-void   stat(struct statdata stats[], int idx, int result, int gdp, int runs);
+void   stat(struct statdata stats[], int idx, int result, int gdp, int rbi, int lob);
 int    roll(void);
 long   myround(double x);
 void   initrand(int p[], int n);
@@ -311,7 +312,7 @@ char * result_code(int z) {
    return code;
 }
 
-int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int ob[], int rli[]) {
+int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int ob[], int rli[], int *rlo) {
    int x, f, w;
    int b, r1 = 0, r2 = 0;
 
@@ -367,6 +368,15 @@ int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int 
 
       default:
       break;
+   }
+
+   if (x < 0) {
+      int j;
+      for (j=0; j<2; j++) {
+         if (ob[j] >= 0) {
+            (*rlo)++;
+         }
+      }
    }
 
    if (w == 1) {
@@ -450,6 +460,9 @@ int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int 
 #else
                offbase(ob);
 #endif
+            }
+            if (*rlo > 0) {
+               (*rlo)--;
             }
             *o = *o + 1;
             if (*o < 3) {
@@ -565,7 +578,7 @@ void statrun(struct statdata stats[], int idx, int result) {
    }
 }
 
-void stat(struct statdata stats[], int idx, int result, int gdp, int runs) {
+void stat(struct statdata stats[], int idx, int result, int gdp, int rbi, int lob) {
    switch (result) {
       case 2:
       break;
@@ -574,14 +587,14 @@ void stat(struct statdata stats[], int idx, int result, int gdp, int runs) {
          (stats[idx].ab)++;
          (stats[idx].h)++;
          (stats[idx].t)++;
-         stats[idx].rbi += runs;
+         stats[idx].rbi += rbi;
       break;
       case 4:
          (stats[idx].pa)++;
          (stats[idx].ab)++;
          (stats[idx].h)++;
          (stats[idx].d)++;
-         stats[idx].rbi += runs;
+         stats[idx].rbi += rbi;
       break;
       case 5:
          (stats[idx].pa)++;
@@ -591,18 +604,20 @@ void stat(struct statdata stats[], int idx, int result, int gdp, int runs) {
       case 7:
          (stats[idx].pa)++;
          (stats[idx].ab)++;
+         stats[idx].lob += lob;
       break;
       case 8:
          (stats[idx].pa)++;
          (stats[idx].ab)++;
          (stats[idx].h)++;
          (stats[idx].s)++;
-         stats[idx].rbi += runs;
+         stats[idx].rbi += rbi;
       break;
       case 9:
          (stats[idx].pa)++;
          (stats[idx].ab)++;
          (stats[idx].so)++;
+         stats[idx].lob += lob;
       break;
       case 10:
       break;
@@ -610,13 +625,14 @@ void stat(struct statdata stats[], int idx, int result, int gdp, int runs) {
          (stats[idx].pa)++;
          (stats[idx].ab)++;
          (stats[idx].gdp) += gdp;
+         stats[idx].lob += lob;
       break;
       case 12:
          (stats[idx].pa)++;
          (stats[idx].ab)++;
          (stats[idx].h)++;
          (stats[idx].hr)++;
-         stats[idx].rbi += runs;
+         stats[idx].rbi += rbi;
       break;
       default:
       break;
@@ -634,7 +650,8 @@ void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *
    int idx;
    int ob[3];
    int rli[4];
-   int runs;
+   int rbi, rs;
+   int rlo;
 
    o = 0;
    c = 0;
@@ -662,20 +679,28 @@ void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *
          rli[j] = -1;
       }
 
-      result(z, a, &o, h, r, &c, &gdp, idx, ob, rli);
-      runs = 0;
+      rlo = 0;
+      result(z, a, &o, h, r, &c, &gdp, idx, ob, rli, &rlo);
+      rbi = 0;
+      rs = 0;
       for (j=0; j<4; j++) {
          if (rli[j] >= 0) {
 #if DEBUG
             printf("rli[%d]:%d\n", j, rli[j]);
 #endif
-            runs++;
+            if (z != 2 && z != 5) {
+               rbi++;
+            }
+            else {
+               rs++;
+            }
             statrun(statp,rli[j],z);
          }
       }
 
-      printf("%02d (%d): i:%-2d gdp:%d z:%-2d rc:%s\n", *li, idx, i+1, gdp, z, result_code(z));
-      stat(statp,idx,z,gdp,runs);
+      printf("%02d (%d): i:%-2d gdp:%d rlo:%d rbi:%d rs:%d z:%-2d rc:%s\n",
+        *li, idx, i+1, gdp, rlo, rbi, rs, z, result_code(z));
+      stat(statp,idx,z,gdp,rbi,rlo);
 
       if (z != 2 && z != 10) {
          *li = *li + 1;
@@ -742,7 +767,7 @@ void match(void) {
    int n = sizeof(ap[0].p)/sizeof(int);
    int in = 9;
    int c = 2;
-   int s_pa, s_ab, s_r, s_rbi, s_h, s_s, s_d, s_t, s_hr, s_bb, s_so, s_gdp;
+   int s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_lob, s_s, s_d, s_t, s_hr, s_gdp;
    int alob, hlob;
 
    initmem(c, &ahiP, &ariP, &hhiP, &hriP);
@@ -823,15 +848,15 @@ void match(void) {
    }
    printf("%5d %2d %2d %5d\n", hr, hh, 0, hlo);
 
-   s_pa=0; s_ab=0; s_r=0; s_h=0; s_rbi=0; s_bb=0; s_so=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_gdp=0;
+   s_pa=0; s_ab=0; s_r=0; s_h=0; s_rbi=0; s_bb=0; s_so=0; s_lob=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_gdp=0;
    printf("Away Team:\n");
-   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
-     "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "S", "D", "T", "HR", "GDP");
+   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
+     "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR", "GDP");
    for(i=0; i<9; i++) {
-      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
          i+1, astat[i].pa, astat[i].ab, astat[i].r, astat[i].h, astat[i].rbi,
-         astat[i].bb, astat[i].so, astat[i].s, astat[i].d, astat[i].t,
-         astat[i].hr, astat[i].gdp);
+         astat[i].bb, astat[i].so, astat[i].lob, astat[i].s, astat[i].d,
+         astat[i].t, astat[i].hr, astat[i].gdp);
       s_pa += astat[i].pa;
       s_ab += astat[i].ab;
       s_r += astat[i].r;
@@ -839,24 +864,25 @@ void match(void) {
       s_rbi += astat[i].rbi;
       s_bb += astat[i].bb;
       s_so += astat[i].so;
+      s_lob += astat[i].lob;
       s_s += astat[i].s;
       s_d += astat[i].d;
       s_t += astat[i].t;
       s_hr += astat[i].hr;
       s_gdp += astat[i].gdp;
    }
-   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
-      s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_s, s_d, s_t, s_hr, s_gdp);
+   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+      s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_lob, s_s, s_d, s_t, s_hr, s_gdp);
 
-   s_pa=0; s_ab=0; s_r=0; s_rbi=0; s_bb=0; s_so=0; s_h=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_gdp=0;
+   s_pa=0; s_ab=0; s_r=0; s_rbi=0; s_bb=0; s_so=0; s_lob=0; s_h=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_gdp=0;
    printf("Home Team:\n");
-   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
-     "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "S", "D", "T", "HR", "GDP");
+   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
+     "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR", "GDP");
    for(i=0; i<9; i++) {
-      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
          i+1, hstat[i].pa, hstat[i].ab, hstat[i].r, hstat[i].h, hstat[i].rbi,
-         hstat[i].bb, hstat[i].so, hstat[i].s, hstat[i].d, hstat[i].t,
-         hstat[i].hr, hstat[i].gdp);
+         hstat[i].bb, hstat[i].so, hstat[i].lob, hstat[i].s, hstat[i].d,
+         hstat[i].t, hstat[i].hr, hstat[i].gdp);
       s_pa += hstat[i].pa;
       s_ab += hstat[i].ab;
       s_r += hstat[i].r;
@@ -864,14 +890,15 @@ void match(void) {
       s_rbi += hstat[i].rbi;
       s_bb += hstat[i].bb;
       s_so += hstat[i].so;
+      s_lob += hstat[i].lob;
       s_s += hstat[i].s;
       s_d += hstat[i].d;
       s_t += hstat[i].t;
       s_hr += hstat[i].hr;
       s_gdp += hstat[i].gdp;
    }
-   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
-      s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_s, s_d, s_t, s_hr, s_gdp);
+   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+      s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_lob, s_s, s_d, s_t, s_hr, s_gdp);
 }
 
 int main(int argc, char *argv[]) {
