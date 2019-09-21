@@ -8,13 +8,15 @@
 struct statdata {
    int pa;
    int ab;
+   int r;
    int h;
+   int rbi;
+   int bb;
+   int so;
    int s;
    int d;
    int t;
    int hr;
-   int bb;
-   int so;
    int gdp;
 };
 
@@ -22,22 +24,81 @@ struct probdata {
    int p[10];
 };
 
+void   onbase(int ob[], int li);
+int    offbase(int ob[]);
 int    advance(int a, int *b, int *c, int *r1, int *r2);
 int    advance_x(int a, int x, int *b, int *c, int *r1, int *r2);
 void   initialize(int seed);
 void   test_advance(int argc, char *argv[]);
 char * result_code(int z);
-int    result(int z, int a, int *o, int *h, int *r, int *c, int *gdp);
-void   stat(struct statdata stats[], int li, int result, int gdp);
+int    result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int ob[], int rli[]);
+void   statrun(struct statdata stats[], int idx, int result);
+void   stat(struct statdata stats[], int idx, int result, int gdp, int runs);
 int    roll(void);
 long   myround(double x);
 void   initrand(int p[], int n);
 int    maprand(int p[], int n, int z0);
 int    genrand(int p[], int n);
 void   side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
-            struct statdata statp[]);
+            int li_base, struct statdata statp[]);
 void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
 void   match(void);
+
+/*
+ * onbase
+ *
+ * allowed input conditions:
+ * ob[0]==-1,ob[1]==-1,ob[2]==-1
+ * ob[0]>=0,ob[1]==-1,ob[2]==-1
+ * ob[0]>=0,ob[1]>=0,ob[2]==-1
+ */
+void onbase(int ob[], int li) {
+   int j;
+#if DEBUG
+   for(j=2; j>=0; j--) {
+      printf("onbase(begin)- j:%d, ob[%d]:%d\n", j, j, ob[j]);
+   }
+   printf("onbase(begin)- li:%d\n", li);
+   printf("\n");
+#endif
+   assert(ob[2] == -1);
+#if DEBUG
+   printf("\n");
+#endif
+   for (j=2; j>0; j--) {
+      if (ob[j-1] < 0) continue;
+      ob[j] = ob[j-1];
+   }
+   ob[0] = li;
+#if DEBUG
+   for(j=2; j>=0; j--) {
+      printf("onbase (end)- j:%d, ob[%d]:%d\n", j, j, ob[j]);
+   }
+#endif
+}
+
+int offbase(int ob[]) {
+   int j, rc = -1;
+#if DEBUG
+   for(j=2; j>=0; j--) {
+      printf("offbase(begin)- j:%d, ob[%d]:%d\n", j, j, ob[j]);
+   }
+#endif
+   for (j=2;j>=0;j--) {
+      if (ob[j] >= 0) {
+         rc = ob[j];
+         ob[j] = -1;
+         break;
+      }
+   }
+#if DEBUG
+   for(j=2; j>=0; j--) {
+      printf("offbase(end)- j:%d, ob[%d]:%d\n", j, j, ob[j]);
+   }
+   printf("offbase(end)- rc:%d\n", rc);
+#endif
+   return rc;
+}
 
 int advance(int a, int *b, int *c, int *r1, int *r2) {
    int x = 0, r;
@@ -250,9 +311,9 @@ char * result_code(int z) {
    return code;
 }
 
-int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp) {
+int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int ob[], int rli[]) {
    int x, f, w;
-   int b, r1, r2;
+   int b, r1 = 0, r2 = 0;
 
    x = -1;
    f = 0;
@@ -309,24 +370,86 @@ int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp) {
    }
 
    if (w == 1) {
+      int j;
+#if DEBUG
+      printf("before advance- *r:%d, c:0x%1x, r1:0x%02x, r2:%d\n", *r, *c, r1, r2);
+#endif
       advance(a, &b, c, &r1, &r2);
       *r = *r + r2;
+#if DEBUG
+      printf("after advance- *r:%d, c:0x%1x, r1:0x%02x, r2:%d\n", *r, *c, r1, r2);
+#endif
+      for (j=0; j<r2; j++) {
+         int li = offbase(ob);
+         if (li >= 0) {
+            rli[j] = li;
+#if DEBUG
+            printf("j:%d, rli[j]:%d scored!\n", j, li);
+#endif
+         }
+      }
+      onbase(ob,idx);
    }
    else if (x >= 0) {
+      int j;
+#if DEBUG
+      printf("before advance_x- x:%d,*r:%d, c:0x%1x, r1:0x%02x, r2:%d\n", x, *r, *c, r1, r2);
+#endif
       advance_x(a, x, &b, c, &r1, &r2);
       *r = *r + r2;
+#if DEBUG
+      printf("after advance_x- x:%d,*r:%d, c:0x%1x, r1:0x%02x, r2:%d\n", x, *r, *c, r1, r2);
+#endif
+      if (x == 4) r2 = r2 - 1;
+      for (j=0; j<r2; j++) {
+         int li;
+         li = offbase(ob);
+         if (li >= 0) {
+            rli[j] = li;
+#if DEBUG
+            printf("j:%d, rli[j]:%d scored!\n", j, li);
+#endif
+         }
+      }
+      if (x == 4) {
+         rli[j] = idx;
+      }
+      else if (x > 0) {
+         onbase(ob,idx);
+      }
    }
    else {
       if (x == -2) {
          if (*c > 0) {
-            if (*c & 0x01) {
-               *c = *c & ~(0x01);
+#if DEBUG
+            int li = -1;
+#endif
+            if (*c & 0x04) {
+               *c = *c & ~(0x04);
+#if DEBUG
+               li = offbase(ob);
+               printf("c:%2x runner %d is out!\n", 0x04, li);
+#else
+               offbase(ob);
+#endif
             }
             else if (*c & 0x02) {
                *c = *c & ~(0x02);
+#if DEBUG
+               li = offbase(ob);
+               printf("c:%2x runner %d is out!\n", 0x02, li);
+#else
+               offbase(ob);
+#endif
             }
-            else if (*c & 0x04) {
-               *c = *c & ~(0x04);
+            else if (*c & 0x01) {
+               *c = *c & ~(0x01);
+#if DEBUG
+               li = offbase(ob);
+               printf("c:%2x runner %d is out!\n", 0x01, li);
+#else
+               offbase(ob);
+#endif
             }
             *o = *o + 1;
             if (*o < 3) {
@@ -427,8 +550,22 @@ int genrand(int p[], int n) {
    return z;
 }
 
-void stat(struct statdata stats[], int li, int result, int gdp) {
-   int idx = li % 9;
+void statrun(struct statdata stats[], int idx, int result) {
+   switch (result) {
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 8:
+      case 12:
+         (stats[idx].r)++;
+      break;
+      default:
+      break;
+   }
+}
+
+void stat(struct statdata stats[], int idx, int result, int gdp, int runs) {
    switch (result) {
       case 2:
       break;
@@ -437,12 +574,14 @@ void stat(struct statdata stats[], int li, int result, int gdp) {
          (stats[idx].ab)++;
          (stats[idx].h)++;
          (stats[idx].t)++;
+         stats[idx].rbi += runs;
       break;
       case 4:
          (stats[idx].pa)++;
          (stats[idx].ab)++;
          (stats[idx].h)++;
          (stats[idx].d)++;
+         stats[idx].rbi += runs;
       break;
       case 5:
          (stats[idx].pa)++;
@@ -458,6 +597,7 @@ void stat(struct statdata stats[], int li, int result, int gdp) {
          (stats[idx].ab)++;
          (stats[idx].h)++;
          (stats[idx].s)++;
+         stats[idx].rbi += runs;
       break;
       case 9:
          (stats[idx].pa)++;
@@ -476,6 +616,7 @@ void stat(struct statdata stats[], int li, int result, int gdp) {
          (stats[idx].ab)++;
          (stats[idx].h)++;
          (stats[idx].hr)++;
+         stats[idx].rbi += runs;
       break;
       default:
       break;
@@ -483,32 +624,58 @@ void stat(struct statdata stats[], int li, int result, int gdp) {
 }
 
 void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
-          struct statdata statp[])
+          int li_base, struct statdata statp[])
 {
+   int j;
    int z;
    int o;
    int a, c;
    int gdp;
    int idx;
+   int ob[3];
+   int rli[4];
+   int runs;
 
    o = 0;
    c = 0;
 
+   for (j=0; j<3; j++) {
+      ob[j] = rli[j] = -1;
+   }
+   rli[3] = -1;
+
    do {
       a =  c;
 
-      idx = *li % 9;
+      idx = (*li - li_base) % 9;
 
       z = genrand(p[idx].p, n);
 
 #if DEBUG
+      printf("\n");
+      printf("side: *li:%d, (*li - li_base):%d, idx:%d, z:%d, rc:%s\n", *li, (*li - li_base), idx, z,
+        result_code(z));
       printf("a=0x%02x o=%d h=%2d r=%2d z=%2d\n", a, o, *h, *r, z);
 #endif
 
-      result(z, a, &o, h, r, &c, &gdp);
+      for (j=0; j<4; j++) {
+         rli[j] = -1;
+      }
 
-      printf("%02d (%d): i:%-2d gdp:%d z:%-2d rc:%s\n", *li, idx+1, i+1, gdp, z, result_code(z));
-      stat(statp,*li,z,gdp);
+      result(z, a, &o, h, r, &c, &gdp, idx, ob, rli);
+      runs = 0;
+      for (j=0; j<4; j++) {
+         if (rli[j] >= 0) {
+#if DEBUG
+            printf("rli[%d]:%d\n", j, rli[j]);
+#endif
+            runs++;
+            statrun(statp,rli[j],z);
+         }
+      }
+
+      printf("%02d (%d): i:%-2d gdp:%d z:%-2d rc:%s\n", *li, idx, i+1, gdp, z, result_code(z));
+      stat(statp,idx,z,gdp,runs);
 
       if (z != 2 && z != 10) {
          *li = *li + 1;
@@ -559,8 +726,8 @@ void initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]) {
 
 void match(void) {
    int i = 0;
-   int ar = 0, ah = 0, ali = 100, *ahiP = NULL, *ariP = NULL;
-   int hr = 0, hh = 0, hli = 200, *hhiP = NULL, *hriP = NULL;
+   int ar = 0, ah = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
+   int hr = 0, hh = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
    struct statdata astat[9] = { 0 };
    struct statdata hstat[9] = { 0 };
    struct probdata ap[9];
@@ -568,7 +735,7 @@ void match(void) {
    int n = sizeof(ap[0].p)/sizeof(int);
    int in = 9;
    int c = 2;
-   int s_pa, s_ab, s_h, s_s, s_d, s_t, s_hr, s_bb, s_so, s_gdp;
+   int s_pa, s_ab, s_r, s_rbi, s_h, s_s, s_d, s_t, s_hr, s_bb, s_so, s_gdp;
 
    initmem(c, &ahiP, &ariP, &hhiP, &hriP);
    for (i=0; i<9; i++) {
@@ -584,7 +751,7 @@ void match(void) {
          initmem(c, &ahiP, &ariP, &hhiP, &hriP);
       }
 
-      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, astat);
+      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, astat);
       printf("i:%d, ariP[i]:%d, ahiP[i]:%d\n", i, ariP[i], ahiP[i]);
       ar = ar + ariP[i];
       if (i>=8 && hr > ar) {
@@ -593,7 +760,7 @@ void match(void) {
       }
       printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
 
-      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hstat);
+      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hstat);
       printf("i:%d, hriP[i]:%d, hhiP[i]:%d\n", i, hriP[i], hhiP[i]);
       hr = hr + hriP[i];
       printf("end of side: bottom, i:%d, ar:%d, hr:%d\n", i, ar, hr);
@@ -646,51 +813,55 @@ void match(void) {
    }
    printf("%5d %2d %2d\n", hr, hh, 0);
 
-   s_pa=0; s_ab=0; s_h=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_bb=0; s_so=0; s_gdp=0;
+   s_pa=0; s_ab=0; s_r=0; s_h=0; s_rbi=0; s_bb=0; s_so=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_gdp=0;
    printf("Away Team:\n");
-   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
-     "#", "PA", "AB", "H", "S", "D", "T", "HR", "BB", "SO", "GDP");
+   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
+     "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "S", "D", "T", "HR", "GDP");
    for(i=0; i<9; i++) {
-      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
-         i+1, astat[i].pa, astat[i].ab, astat[i].h, astat[i].s,
-         astat[i].d, astat[i].t, astat[i].hr, astat[i].bb,
-         astat[i].so, astat[i].gdp);
+      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+         i+1, astat[i].pa, astat[i].ab, astat[i].r, astat[i].h, astat[i].rbi,
+         astat[i].bb, astat[i].so, astat[i].s, astat[i].d, astat[i].t,
+         astat[i].hr, astat[i].gdp);
       s_pa += astat[i].pa;
       s_ab += astat[i].ab;
+      s_r += astat[i].r;
       s_h += astat[i].h;
+      s_rbi += astat[i].rbi;
+      s_bb += astat[i].bb;
+      s_so += astat[i].so;
       s_s += astat[i].s;
       s_d += astat[i].d;
       s_t += astat[i].t;
       s_hr += astat[i].hr;
-      s_bb += astat[i].bb;
-      s_so += astat[i].so;
       s_gdp += astat[i].gdp;
    }
-   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
-      s_pa, s_ab, s_h, s_s, s_d, s_t, s_hr, s_bb, s_so, s_gdp);
+   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+      s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_s, s_d, s_t, s_hr, s_gdp);
 
-   s_pa=0; s_ab=0; s_h=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_bb=0; s_so=0; s_gdp=0;
+   s_pa=0; s_ab=0; s_r=0; s_rbi=0; s_bb=0; s_so=0; s_h=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_gdp=0;
    printf("Home Team:\n");
-   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
-     "#", "PA", "AB", "H", "S", "D", "T", "HR", "BB", "SO", "GDP");
+   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
+     "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "S", "D", "T", "HR", "GDP");
    for(i=0; i<9; i++) {
-      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
-         i+1, hstat[i].pa, hstat[i].ab, hstat[i].h, hstat[i].s,
-         hstat[i].d, hstat[i].t, hstat[i].hr, hstat[i].bb,
-         hstat[i].so, hstat[i].gdp);
+      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+         i+1, hstat[i].pa, hstat[i].ab, hstat[i].r, hstat[i].h, hstat[i].rbi,
+         hstat[i].bb, hstat[i].so, hstat[i].s, hstat[i].d, hstat[i].t,
+         hstat[i].hr, hstat[i].gdp);
       s_pa += hstat[i].pa;
       s_ab += hstat[i].ab;
+      s_r += hstat[i].r;
       s_h += hstat[i].h;
+      s_rbi += hstat[i].rbi;
+      s_bb += hstat[i].bb;
+      s_so += hstat[i].so;
       s_s += hstat[i].s;
       s_d += hstat[i].d;
       s_t += hstat[i].t;
       s_hr += hstat[i].hr;
-      s_bb += hstat[i].bb;
-      s_so += hstat[i].so;
       s_gdp += hstat[i].gdp;
    }
-   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
-      s_pa, s_ab, s_h, s_s, s_d, s_t, s_hr, s_bb, s_so, s_gdp);
+   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
+      s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_s, s_d, s_t, s_hr, s_gdp);
 }
 
 int main(int argc, char *argv[]) {
