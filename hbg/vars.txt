@@ -1,0 +1,72 @@
+variables used in engine.c
+
+match:
+   i
+   ar
+   ah
+   alo
+   ali_base
+   ali
+   ahiP
+   ariP
+   hr
+   hh
+   hlo
+   hli_base
+   hli
+   hhiP
+   hriP
+   astat
+   hstat
+   ap
+   hp
+   n
+   in
+   c
+   s_pa
+   s_ab
+   s_r
+   s_h
+   s_rbi
+   s_bb
+   s_so
+   s_lob
+   s_s
+   s_d
+   s_t
+   s_hr
+   s_gdp
+   alob
+   hlob
+
+side:
+   j
+   z
+   o
+   a
+   c
+   gdp
+   idx
+   ob
+   rli
+   rbi
+   rs
+   rlo
+
+
+result:
+   x
+   f
+   w
+   b
+   r1
+   r2
+
+advance:
+   x
+   r
+
+advance_x:
+   r
+   q
+   i

@@ -470,6 +470,9 @@ int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int 
                *gdp = 1;
             }
          }
+         else {
+            *o = *o + 1;
+         }
       }
       else if (x == -1) {
          if (f == 0) {
@@ -698,8 +701,8 @@ void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *
          }
       }
 
-      printf("%02d (%d): i:%-2d gdp:%d rlo:%d rbi:%d rs:%d z:%-2d rc:%s\n",
-        *li, idx, i+1, gdp, rlo, rbi, rs, z, result_code(z));
+      printf("%02d (%d): i:%-2d o:%d gdp:%d rlo:%d rbi:%d rs:%d z:%-2d rc:%s\n",
+        *li, idx, i+1, o, gdp, rlo, rbi, rs, z, result_code(z));
       stat(statp,idx,z,gdp,rbi,rlo);
 
       if (z != 2 && z != 10) {
