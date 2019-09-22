@@ -43,6 +43,8 @@ int    genrand(int p[], int n);
 void   side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
             int li_base, struct statdata statp[], int *lob);
 void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
+void   linescore(int i, int ahiP[], int ariP[], int ar, int alo, int hhiP[], int hriP[], int hr, int hlo);
+void   boxscore(struct statdata astat[], struct statdata hstat[]);
 void   match(void);
 
 /*
@@ -759,64 +761,11 @@ void initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]) {
    }
 }
 
-void match(void) {
-   int i = 0;
-   int ar = 0, ah = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
-   int hr = 0, hh = 0, hlo = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
-   struct statdata astat[9] = { 0 };
-   struct statdata hstat[9] = { 0 };
-   struct probdata ap[9];
-   struct probdata hp[9];
-   int n = sizeof(ap[0].p)/sizeof(int);
-   int in = 9;
-   int c = 2;
-   int s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_lob, s_s, s_d, s_t, s_hr, s_gdp;
-   int alob, hlob;
-
-   initmem(c, &ahiP, &ariP, &hhiP, &hriP);
-   for (i=0; i<9; i++) {
-      initrand(ap[i].p, n);
-      initrand(hp[i].p, n);
-   }
-
-   i = 0;
-   do {
-      if (i >= c) {
-         printf("initmem: i:%d, c:%d\n", i, c);
-         c += c/2;
-         initmem(c, &ahiP, &ariP, &hhiP, &hriP);
-      }
-
-      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, astat, &alob);
-      printf("i:%d, ariP[i]:%d, ahiP[i]:%d, alob:%d\n", i, ariP[i], ahiP[i], alob);
-      alo = alo + alob;
-      ar = ar + ariP[i];
-      if (i>=8 && hr > ar) {
-         hriP[i] = -1;
-         break;
-      }
-      printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
-
-      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hstat, &hlob);
-      printf("i:%d, hriP[i]:%d, hhiP[i]:%d, hlob:%d\n", i, hriP[i], hhiP[i], hlob);
-      hlo = hlo + hlob;
-      hr = hr + hriP[i];
-      printf("end of side: bottom, i:%d, ar:%d, hr:%d\n", i, ar, hr);
-
-      if (i>=8) {
-         if (hr == ar) {
-            printf("extra: i:%d, ar:%d, hr:%d\n", i, ar, hr);
-         }
-         else {
-            printf("end of game: i:%d, ar:%d, hr:%d\n", i, ar, hr);
-            break;
-         }
-      }
-      i++;
-   }
-   while (1);
-
-   in = i+1;
+void linescore(int i, int ahiP[], int ariP[], int ar, int alo,
+               int hhiP[], int hriP[], int hr, int hlo)
+{
+   int ah = 0, hh = 0;
+   int in = i+1;
 
    printf("T: ");
    for (i=0; i<in; i++) {
@@ -850,6 +799,11 @@ void match(void) {
       }
    }
    printf("%5d %2d %2d %5d\n", hr, hh, 0, hlo);
+}
+
+void boxscore(struct statdata astat[], struct statdata hstat[]) {
+   int i;
+   int s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_lob, s_s, s_d, s_t, s_hr, s_gdp;
 
    s_pa=0; s_ab=0; s_r=0; s_h=0; s_rbi=0; s_bb=0; s_so=0; s_lob=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_gdp=0;
    printf("Away Team:\n");
@@ -902,6 +856,65 @@ void match(void) {
    }
    printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
       s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_lob, s_s, s_d, s_t, s_hr, s_gdp);
+}
+
+void match(void) {
+   int i = 0;
+   int ar = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
+   int hr = 0, hlo = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
+   struct statdata astat[9] = { 0 };
+   struct statdata hstat[9] = { 0 };
+   struct probdata ap[9];
+   struct probdata hp[9];
+   int n = sizeof(ap[0].p)/sizeof(int);
+   int c = 2;
+   int alob, hlob;
+
+   initmem(c, &ahiP, &ariP, &hhiP, &hriP);
+   for (i=0; i<9; i++) {
+      initrand(ap[i].p, n);
+      initrand(hp[i].p, n);
+   }
+
+   i = 0;
+   do {
+      if (i >= c) {
+         printf("initmem: i:%d, c:%d\n", i, c);
+         c += c/2;
+         initmem(c, &ahiP, &ariP, &hhiP, &hriP);
+      }
+
+      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, astat, &alob);
+      printf("i:%d, ariP[i]:%d, ahiP[i]:%d, alob:%d\n", i, ariP[i], ahiP[i], alob);
+      alo = alo + alob;
+      ar = ar + ariP[i];
+      if (i>=8 && hr > ar) {
+         hriP[i] = -1;
+         break;
+      }
+      printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
+
+      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hstat, &hlob);
+      printf("i:%d, hriP[i]:%d, hhiP[i]:%d, hlob:%d\n", i, hriP[i], hhiP[i], hlob);
+      hlo = hlo + hlob;
+      hr = hr + hriP[i];
+      printf("end of side: bottom, i:%d, ar:%d, hr:%d\n", i, ar, hr);
+
+      if (i>=8) {
+         if (hr == ar) {
+            printf("extra: i:%d, ar:%d, hr:%d\n", i, ar, hr);
+         }
+         else {
+            printf("end of game: i:%d, ar:%d, hr:%d\n", i, ar, hr);
+            break;
+         }
+      }
+      i++;
+   }
+   while (1);
+
+   linescore(i,ahiP,ariP,ar,alo,hhiP,hriP,hr,hlo);
+   boxscore(astat,hstat);
 }
 
 int main(int argc, char *argv[]) {
