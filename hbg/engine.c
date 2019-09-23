@@ -5,6 +5,23 @@
 #include <string.h>
 #include <time.h>
 
+struct batdata {
+   int pa;
+   int ab;
+   int h;
+   int s;
+   int d;
+   int t;
+   int hr;
+   int bb;
+   int so;
+   int gdp;
+   int hbp;
+   int sh;
+   int sf;
+   int out;
+};
+
 struct statdata {
    int pa;
    int ab;
@@ -37,7 +54,9 @@ void   statrun(struct statdata stats[], int idx, int result);
 void   stat(struct statdata stats[], int idx, int result, int gdp, int rbi, int lob);
 int    roll(void);
 long   myround(double x);
-void   initrand(int p[], int n);
+void   defaultprob(int p[]);
+void   initrand(int p[], int n, struct batdata *bat, struct batdata *lbat,
+                struct batdata *pit, struct batdata *lpit);
 int    maprand(int p[], int n, int z0);
 int    genrand(int p[], int n);
 void   side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
@@ -45,7 +64,9 @@ void   side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int
 void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
 void   linescore(int i, int ahiP[], int ariP[], int ar, int alo, int hhiP[], int hriP[], int hr, int hlo);
 void   boxscore(struct statdata astat[], struct statdata hstat[]);
-void   match(void);
+void   match(struct batdata abat[], struct batdata hbat[], struct batdata *lbat,
+             struct batdata *apit, struct batdata *hpit, struct batdata *lpit);
+void   readvals(struct batdata *dataP);
 
 /*
  * onbase
@@ -509,7 +530,7 @@ long myround(double x) {
    return (long) (x-0.5);
 }
 
-void initrand(int p[], int n) {
+void defaultprob(int p[]) {
    int i;
    float p0, t0 = 0, t = 0;
 
@@ -529,6 +550,88 @@ void initrand(int p[], int n) {
          printf("i:%2d, p0: %7.3f, p[%d]: %4d\n", i, p0, i, p[i]);
 #endif
       }
+   }
+}
+
+int log5calc(double b, double bl, double p, double pl) {
+   double p0, pl0 = (bl + pl) / 2;
+   if (b == 0 && p == 0) {
+      p0 = 0;
+   }
+   else if (b > 0 && p == 0) {
+      p0 = b;
+   }
+   else if (b == 0 && p > 0) {
+      p0 = p;
+   }
+   else {
+      p0 = ((b*p)/pl0) / (((b*p)/pl0) + (1-b) * (1-p) / (1-pl0));
+   }
+   return p0 * 1000;
+}
+
+void setprob(int p[], struct batdata *bat, struct batdata *lbat,
+             struct batdata *pit, struct batdata *lpit)
+{
+   int t = 0;
+   int p0[11];
+
+   p0[0] = 0;
+   p0[1] = log5calc((double)bat->t/bat->pa, (double)lbat->t/lbat->pa, (double)pit->t/pit->pa, (double)lpit->t/lpit->pa);
+   t += p0[1];
+   p0[2] = log5calc((double)bat->d/bat->pa, (double)lbat->d/lbat->pa, (double)pit->d/pit->pa, (double)lpit->d/lpit->pa);
+   t += p0[2];
+   p0[3] = log5calc((double)bat->bb/bat->pa, (double)lbat->bb/lbat->pa, (double)pit->bb/pit->pa, (double)lpit->bb/lpit->pa);
+   t += p0[3];
+   p0[6] = log5calc((double)bat->s/bat->pa, (double)lbat->s/lbat->pa, (double)pit->s/pit->pa, (double)lpit->s/lpit->pa);
+   t += p0[6];
+   p0[7] = log5calc((double)bat->so/bat->pa, (double)lbat->so/lbat->pa, (double)pit->so/pit->pa, (double)lpit->so/lpit->pa);
+   t += p0[7];
+   p0[8] = p0[7];
+   p0[9] = log5calc((double)bat->gdp/bat->pa, (double)lbat->gdp/lbat->pa, (double)pit->gdp/pit->pa, (double)lpit->gdp/lpit->pa);
+   t += p0[9];
+   p0[10] = log5calc((double)bat->hr/bat->pa, (double)lbat->hr/lbat->pa, (double)pit->hr/pit->pa, (double)lpit->hr/lpit->pa);
+   t += p0[10];
+   p0[4] = (1000 - t)/2;
+   t += p0[4];
+   p0[5] = 1000 - t;
+   t += p0[5];
+
+   t = 0;
+   p[0] = p0[0];
+   t += p[0];
+   p[1] = t + p0[1];
+   t += p0[1];
+   p[2] = t + p0[2];
+   t += p0[2];
+   p[3] = t + p0[3];
+   t += p0[3];
+   p[4] = t + p0[4];
+   t += p0[4];
+   p[5] = t + p0[5];
+   t += p0[5];
+   p[6] = t + p0[6];
+   t += p0[6];
+   p[7] = t + p0[7];
+   t += p0[7];
+   p[8] = p[7];
+   p[9] = t + p0[9];
+   t += p0[9];
+   p[10] = t + p0[10];
+   t += p0[10];
+}
+
+void initrand(int p[], int n, struct batdata *bat, struct batdata *lbat,
+              struct batdata *pit, struct batdata *lpit)
+{
+#if DEBUG
+   int i;
+#endif
+   if (bat == NULL) {
+      defaultprob(p);
+   }
+   else {
+      setprob(p, bat, lbat, pit, lpit);
    }
 
 #if DEBUG
@@ -858,7 +961,9 @@ void boxscore(struct statdata astat[], struct statdata hstat[]) {
       s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_lob, s_s, s_d, s_t, s_hr, s_gdp);
 }
 
-void match(void) {
+void match(struct batdata abat[], struct batdata hbat[], struct batdata *lbat,
+           struct batdata *apit, struct batdata *hpit, struct batdata *lpit)
+{
    int i = 0;
    int ar = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
    int hr = 0, hlo = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
@@ -872,8 +977,14 @@ void match(void) {
 
    initmem(c, &ahiP, &ariP, &hhiP, &hriP);
    for (i=0; i<9; i++) {
-      initrand(ap[i].p, n);
-      initrand(hp[i].p, n);
+      if (abat) {
+         initrand(ap[i].p, n, &abat[i], lbat, hpit, lpit);
+         initrand(hp[i].p, n, &hbat[i], lbat, apit, lpit);
+      }
+      else {
+         initrand(ap[i].p, n, NULL, NULL, NULL, NULL);
+         initrand(hp[i].p, n, NULL, NULL, NULL, NULL);
+      }
    }
 
    i = 0;
@@ -917,6 +1028,30 @@ void match(void) {
    boxscore(astat,hstat);
 }
 
+void readvals(struct batdata *dataP) {
+   char inbuf[132], *pInbuf;
+   char inValsBuf[132] = { 0 };
+   int n1, n2;
+
+   pInbuf = fgets(inbuf,sizeof(inbuf),stdin);
+   assert(pInbuf);
+   printf("inbuf:%s\n", inbuf);
+   n1 = sscanf(pInbuf,"%s\n",inValsBuf);
+   printf("n1:%d\n", n1);
+   assert(n1 == 1);
+   printf("inValsBuf:%s\n", inValsBuf);
+   n2 = sscanf(inValsBuf,"PA:%d,AB:%d,H:%d,S:%d,D:%d,T:%d,HR:%d,BB:%d,"
+     "SO:%d,GDP:%d,HBP:%d,SH:%d,SF:%d,OUT:%d\n", &dataP->pa, &dataP->ab,
+     &dataP->h, &dataP->s, &dataP->d, &dataP->t, &dataP->hr, &dataP->bb,
+     &dataP->so, &dataP->gdp, &dataP->hbp, &dataP->sh, &dataP->sf, &dataP->out);
+   printf("n2:%d\n", n2);
+   assert(n2 == 14);
+   printf("PA:%d,AB:%d,H:%d,S:%d,D:%d,T:%d,HR:%d,BB:%d,SO:%d,GDP:%d,HBP:%d,"
+     "SH:%d,SF:%d,OUT:%d\n", dataP->pa, dataP->ab, dataP->h, dataP->s,
+     dataP->d, dataP->t, dataP->hr, dataP->bb, dataP->so, dataP->gdp,
+     dataP->hbp, dataP->sh, dataP->sf, dataP->out);
+}
+
 int main(int argc, char *argv[]) {
 
    if (argc > 1) {
@@ -926,12 +1061,36 @@ int main(int argc, char *argv[]) {
       }
       else {
          initialize(v);
-         match();
+         if (argc > 2) {
+            int i;
+            struct batdata abat[9];
+            struct batdata hbat[9];
+            struct batdata lbat;
+            struct batdata apit;
+            struct batdata hpit;
+            struct batdata lpit;
+
+            for (i=0; i<9; i++) {
+               readvals(&abat[i]);
+            }
+            for (i=0; i<9; i++) {
+               readvals(&hbat[i]);
+            }
+            readvals(&lbat);
+            readvals(&apit);
+            readvals(&hpit);
+            readvals(&lpit);
+
+            match(abat, hbat, &lbat, &apit, &hpit, &lpit);
+         }
+         else {
+            match(NULL, NULL, NULL, NULL, NULL, NULL);
+         }
       }
    }
    else {
       initialize(-1);
-      match();
+      match(NULL, NULL, NULL, NULL, NULL, NULL);
    }
 
    exit(0);
