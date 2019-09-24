@@ -66,12 +66,13 @@ void   clearmem(int idx, int c, int ahiP[], int ariP[], int hhiP[], int hriP[]);
 void   linescore(int i, char *aName, char *hName, int ahiP[], int ariP[],
                  int ar, int alo, int hhiP[],
                  int hriP[], int hr, int hlo, int g, int *awP, int *hwP);
-void   boxscore(char *name, struct statdata stat[]);
+void   boxscore(char *name, struct statdata stat[], int s_ab[], int s_h[]);
 void   addstat(struct statdata g_stat[], struct statdata s_stat[]);
 void   match(int g, char *aName, char *hName, struct batdata abat[],
              struct batdata hbat[], struct batdata *lbat,
              struct batdata *apit, struct batdata *hpit, struct batdata *lpit,
-             struct statdata astat[], struct statdata hstat[], int *awP, int *hwP);
+             struct statdata astat[], struct statdata hstat[], int *awP, int *hwP,
+             int saab[], int sah[], int shab[], int shh[]);
 void   matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdata *lbat,
                 struct batdata *apit, struct batdata *hpit, struct batdata *lpit);
 void   readvals(struct batdata *dataP);
@@ -926,42 +927,86 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
    printf("%5d %2d %2d %5d\n", hr, hh, 0, hlo);
 }
 
-void boxscore(char *name, struct statdata stat[]) {
+void boxscore(char *name, struct statdata stat[], int s_ab[], int s_h[]) {
    int i;
-   int s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_lob, s_s, s_d, s_t, s_hr, s_gdp;
+   int pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp;
+   int ab0, h0, t_ab0 = 0, t_h0 = 0;
+   double gavg = 0., savg = 0.;
 
-   s_pa=0; s_ab=0; s_r=0; s_h=0; s_rbi=0; s_bb=0; s_so=0; s_lob=0; s_s=0; s_d=0; s_t=0; s_hr=0; s_gdp=0;
+   pa=0; ab=0; r=0; h=0; rbi=0; bb=0; so=0; lob=0; s=0; d=0; t=0; hr=0; gdp=0;
    printf("%s Team:\n", name);
-   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s\n",
-     "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR", "GDP");
+   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %6s %6s\n",
+     "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR", "GDP", "AVG", "SAVG");
    for(i=0; i<9; i++) {
-      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %6.3f\n",
+      if (stat[i].ab > 0) {
+         gavg = (double) stat[i].h / stat[i].ab;
+      }
+      else {
+         gavg = 0.;
+      }
+      if (s_ab) {
+         ab0 = s_ab[i];
+         h0 = s_h[i];
+         t_ab0 += ab0;
+         t_h0 += h0;
+      }
+      else {
+         ab0 = 0;
+         h0 = 0;
+         t_ab0 = 0;
+         t_h0 = 0;
+      }
+      ab0 += stat[i].ab;
+      h0 += stat[i].h;
+      if (ab0 > 0) {
+         savg = (double) h0 / ab0;
+      }
+      else {
+         savg = 0.;
+      }
+      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %6.3f %6.3f\n",
          i+1, stat[i].pa, stat[i].ab, stat[i].r, stat[i].h, stat[i].rbi,
          stat[i].bb, stat[i].so, stat[i].lob, stat[i].s, stat[i].d,
-         stat[i].t, stat[i].hr, stat[i].gdp, (double) stat[i].h / stat[i].ab);
-      s_pa  += stat[i].pa;
-      s_ab  += stat[i].ab;
-      s_r   += stat[i].r;
-      s_h   += stat[i].h;
-      s_rbi += stat[i].rbi;
-      s_bb  += stat[i].bb;
-      s_so  += stat[i].so;
-      s_lob += stat[i].lob;
-      s_s   += stat[i].s;
-      s_d   += stat[i].d;
-      s_t   += stat[i].t;
-      s_hr  += stat[i].hr;
-      s_gdp += stat[i].gdp;
+         stat[i].t, stat[i].hr, stat[i].gdp, gavg, savg);
+      pa  += stat[i].pa;
+      ab  += stat[i].ab;
+      r   += stat[i].r;
+      h   += stat[i].h;
+      rbi += stat[i].rbi;
+      bb  += stat[i].bb;
+      so  += stat[i].so;
+      lob += stat[i].lob;
+      s   += stat[i].s;
+      d   += stat[i].d;
+      t   += stat[i].t;
+      hr  += stat[i].hr;
+      gdp += stat[i].gdp;
    }
-   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %6.3f\n",
-      s_pa, s_ab, s_r, s_h, s_rbi, s_bb, s_so, s_lob, s_s, s_d, s_t, s_hr, s_gdp,
-      (double) s_h/s_ab);
+
+   if (ab > 0) {
+      gavg = (double) h / ab;
+   }
+   else {
+      gavg = 0.;
+   }
+   ab0 = t_ab0 + ab;
+   h0 = t_h0 + h;
+   if (ab0 > 0) {
+      savg = (double) h0 / ab0;
+   }
+   else {
+      savg = 0.;
+   }
+
+   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %6.3f %6.3f\n",
+      pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, gavg, savg);
 }
 
 void match(int g, char *aName, char *hName, struct batdata abat[],
            struct batdata hbat[], struct batdata *lbat,
            struct batdata *apit, struct batdata *hpit, struct batdata *lpit,
-           struct statdata astat[], struct statdata hstat[], int *awP, int *hwP)
+           struct statdata astat[], struct statdata hstat[], int *awP, int *hwP,
+           int saab[], int sah[], int shab[], int shh[])
 {
    int i = 0;
    int ar = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
@@ -1025,8 +1070,8 @@ void match(int g, char *aName, char *hName, struct batdata abat[],
 
    printf("Game: %d\n", g+1);
    linescore(i,aName,hName,ahiP,ariP,ar,alo,hhiP,hriP,hr,hlo,g,awP,hwP);
-   boxscore(aName,astat);
-   boxscore(hName,hstat);
+   boxscore(aName,astat, saab, sah);
+   boxscore(hName,hstat, shab, shh);
    free(ahiP);
    free(ariP);
    free(hhiP);
@@ -1059,24 +1104,36 @@ void matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdat
    struct statdata s_hstat[9] = { 0 };
    struct statdata g_astat[9] = { 0 };
    struct statdata g_hstat[9] = { 0 };
-   int i, aw = 0, hw = 0;
+   int saab[9] = { 0 };
+   int sah[9] = { 0 };
+   int shab[9] = { 0 };
+   int shh[9] = { 0 };
+   int i, j, aw = 0, hw = 0;
+
    for (i=0; i<n; i++) {
       memset(g_astat,0,sizeof(struct statdata)*9);
       memset(g_hstat,0,sizeof(struct statdata)*9);
+      for (j=0; j<9; j++) {
+         saab[j] = s_astat[j].ab;
+         sah[j]  = s_astat[j].h;
+         shab[j] = s_hstat[j].ab;
+         shh[j]  = s_hstat[j].h;
+      }
+
       if (i%2 == 0) {
-         match(i, "Blue", "Red", abat, hbat, lbat, apit, hpit, lpit, g_astat, g_hstat, &aw, &hw);
+         match(i, "Blue", "Red", abat, hbat, lbat, apit, hpit, lpit, g_astat, g_hstat, &aw, &hw, saab, sah, shab, shh);
          addstat(g_astat, s_astat);
          addstat(g_hstat, s_hstat);
       }
       else {
-         match(i, "Red", "Blue", hbat, abat, lbat, hpit, apit, lpit, g_hstat, g_astat, &hw, &aw);
+         match(i, "Red", "Blue", hbat, abat, lbat, hpit, apit, lpit, g_hstat, g_astat, &hw, &aw, shab, shh, saab, sah);
          addstat(g_hstat, s_hstat);
          addstat(g_astat, s_astat);
       }
    }
    printf("\n");
-   boxscore("Blue",s_astat);
-   boxscore("Red",s_hstat);
+   boxscore("Blue",s_astat, NULL, NULL);
+   boxscore("Red", s_hstat, NULL, NULL);
 }
 
 void readvals(struct batdata *dataP) {
