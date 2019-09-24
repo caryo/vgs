@@ -781,10 +781,12 @@ void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *
 
       idx = (*li - li_base) % 9;
 
+#if DEBUG
+      printf("\n");
+#endif
       z = genrand(p[idx].p, n);
 
 #if DEBUG
-      printf("\n");
       printf("side: *li:%d, (*li - li_base):%d, idx:%d, z:%d, rc:%s\n", *li, (*li - li_base), idx, z,
         result_code(z));
       printf("a=0x%02x o=%d h=%2d r=%2d z=%2d\n", a, o, *h, *r, z);
@@ -1180,6 +1182,7 @@ int main(int argc, char *argv[]) {
       else {
          initialize(v);
          if (argc > 2) {
+#if !defined(USE_DICE)
             int i;
             struct batdata abat[9];
             struct batdata hbat[9];
@@ -1199,15 +1202,22 @@ int main(int argc, char *argv[]) {
             readvals(&hpit);
             readvals(&lpit);
 
+            printf("using input values to build probability tables\n");
             matchset(20, abat, hbat, &lbat, &apit, &hpit, &lpit);
+#else
+            printf("using dice to build probability tables\n");
+            matchset(20, NULL, NULL, NULL, NULL, NULL, NULL);
+#endif
          }
          else {
+            printf("using dice to build probability tables\n");
             matchset(20, NULL, NULL, NULL, NULL, NULL, NULL);
          }
       }
    }
    else {
       initialize(-1);
+      printf("using dice to build probability tables\n");
       matchset(20, NULL, NULL, NULL, NULL, NULL, NULL);
    }
 
