@@ -564,8 +564,8 @@ void defaultprob(int p[]) {
 #endif
       }
    }
-   p[10] = 0;
-   p[11] = 0;
+   p[10] = p[9];
+   p[11] = p[9];
 }
 
 int log5calc(double b, double bl, double p, double pl) {
@@ -633,8 +633,8 @@ void setprob(int p[], struct batdata *bat, struct batdata *lbat,
    p[9] = t + p0[9];
    t += p0[9];
 
-   p[10] = 0;
-   p[11] = 0;
+   p[10] = t;
+   p[11] = t;
 }
 
 void initrand(int p[], int n, struct batdata *bat, struct batdata *lbat,
@@ -676,7 +676,12 @@ int genrand(int p[], int n) {
    z0 = (rand() % 1000) + 1;
 
    z = maprand(p,n,z0);
-   z += 2;
+   if (z < 10) {
+      z += 2;
+   }
+   else {
+      z = 12;
+   }
 #if DEBUG
    printf("genrand: z0: %4d, z: %2d\n", z0, z);
 #endif
@@ -949,7 +954,7 @@ void boxscore(char *name, struct statdata stat[],
 
    pa=0; ab=0; r=0; h=0; rbi=0; bb=0; so=0; lob=0; s=0; d=0; t=0; hr=0; gdp=0; hbp=0; sf=0;
    printf("%s Team:\n", name);
-   printf("%3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %3s %6s %6s %6s %6s\n",
+   printf("%4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %6s %6s %6s %6s\n",
      "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR",
      "GDP", "AVG", "SAVG", "OBP", "SOBP");
    for(i=0; i<9; i++) {
@@ -1007,7 +1012,7 @@ void boxscore(char *name, struct statdata stat[],
       else {
          sobp = 0.;
       }
-      printf("%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %6.3f %6.3f %6.3f %6.3f\n",
+      printf("%4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %6.3f %6.3f %6.3f %6.3f\n",
          i+1, stat[i].pa, stat[i].ab, stat[i].r, stat[i].h, stat[i].rbi,
          stat[i].bb, stat[i].so, stat[i].lob, stat[i].s, stat[i].d,
          stat[i].t, stat[i].hr, stat[i].gdp, gavg, savg, gobp, sobp);
@@ -1056,8 +1061,8 @@ void boxscore(char *name, struct statdata stat[],
       sobp = 0.;
    }
 
-   printf("TOT %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %6.3f %6.3f %6.3f %6.3f\n",
-      pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, gavg, savg, gobp, sobp);
+   printf("%-4s %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %6.3f %6.3f %6.3f %6.3f\n",
+      "TOT", pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, gavg, savg, gobp, sobp);
 }
 
 void match(int g, char *aName, char *hName, struct batdata abat[],
