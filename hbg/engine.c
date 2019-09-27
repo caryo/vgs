@@ -62,21 +62,26 @@ void   initrand(int p[], int n, struct batdata *bat, struct batdata *lbat,
 int    maprand(int p[], int n, int z0);
 int    genrand(int p[], int n);
 void   side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
-            int li_base, struct statdata statp[], int *lob);
+            int li_base, struct statdata batstatp[], struct statdata pitstatp[], int *lob);
 void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
 void   clearmem(int idx, int c, int ahiP[], int ariP[], int hhiP[], int hriP[]);
 void   linescore(int i, char *aName, char *hName, int ahiP[], int ariP[],
                  int ar, int alo, int hhiP[],
                  int hriP[], int hr, int hlo, int g, int *awP, int *hwP);
-void   boxscore(char *name, struct statdata stat[], int s_ab[], int s_h[],
-                int s_bb[], int s_hbp[], int s_sf[]);
-void   addstat(struct statdata g_stat[], struct statdata s_stat[]);
+void   boxscore(char *name, struct statdata batstat[], struct statdata pitstat[],
+                int sbat_ab[], int sbat_h[], int sbat_bb[], int sbat_hbp[], int sbat_sf[],
+                int spit_ab[], int spit_h[], int spit_bb[], int spit_hbp[], int spit_sf[]);
+void   addstat(struct statdata g_stat[], struct statdata s_stat[], int n);
 void   match(int g, char *aName, char *hName, struct batdata abat[],
              struct batdata hbat[], struct batdata *lbat,
              struct batdata *apit, struct batdata *hpit, struct batdata *lpit,
-             struct statdata astat[], struct statdata hstat[], int *awP, int *hwP,
-             int saab[], int sah[], int sabb[], int sahbp[], int sasf[],
-             int shab[], int shh[], int shbb[], int shhbp[], int shsf[]);
+             struct statdata abatstat[], struct statdata apitstat[],
+             struct statdata hstat[], struct statdata hpitstat[],
+             int *awP, int *hwP,
+             int sbat_aab[], int sbat_ah[], int sbat_abb[], int sbat_ahbp[], int sbat_asf[],
+             int spit_aab[], int spit_ah[], int spit_abb[], int spit_ahbp[], int spit_asf[],
+             int sbat_hab[], int sbat_hh[], int sbat_hbb[], int sbat_hhbp[], int sbat_hsf[],
+             int spit_hab[], int spit_hh[], int spit_hbb[], int spit_hhbp[], int spit_hsf[]);
 void   matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdata *lbat,
                 struct batdata *apit, struct batdata *hpit, struct batdata *lpit);
 void   readvals(struct batdata *dataP);
@@ -769,7 +774,7 @@ void stat(struct statdata stats[], int idx, int result, int gdp, int rbi, int lo
 }
 
 void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
-          int li_base, struct statdata statp[], int *lob)
+          int li_base, struct statdata batstatp[], struct statdata pitstatp[], int *lob)
 {
    int j;
    int z;
@@ -825,13 +830,15 @@ void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *
             else {
                rs++;
             }
-            statrun(statp,rli[j],z);
+            statrun(batstatp,rli[j],z);
+            statrun(pitstatp,0,z);
          }
       }
 
       printf("%02d (%d): i:%-2d o:%d gdp:%d rlo:%d rbi:%d rs:%d z:%-2d rc:%s\n",
         *li, idx, i+1, o, gdp, rlo, rbi, rs, z, result_code(z));
-      stat(statp,idx,z,gdp,rbi,rlo);
+      stat(batstatp,idx,z,gdp,rbi,rlo);
+      stat(pitstatp,0,z,gdp,0,0);
 
       if (z != 2 && z != 10) {
          *li = *li + 1;
@@ -943,8 +950,9 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
    printf("%5d %2d %2d %5d\n", hr, hh, 0, hlo);
 }
 
-void boxscore(char *name, struct statdata stat[],
-              int s_ab[], int s_h[], int s_bb[], int s_hbp[], int s_sf[])
+void boxscore(char *name, struct statdata batstat[], struct statdata pitstat[],
+              int sbat_ab[], int sbat_h[], int sbat_bb[], int sbat_hbp[], int sbat_sf[],
+              int spit_ab[], int spit_h[], int spit_bb[], int spit_hbp[], int spit_sf[])
 {
    int i;
    int pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, hbp, sf;
@@ -958,18 +966,18 @@ void boxscore(char *name, struct statdata stat[],
      "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR",
      "GDP", "AVG", "SAVG", "OBP", "SOBP");
    for(i=0; i<9; i++) {
-      if (stat[i].ab > 0) {
-         gavg = (double) stat[i].h / stat[i].ab;
+      if (batstat[i].ab > 0) {
+         gavg = (double) batstat[i].h / batstat[i].ab;
       }
       else {
          gavg = 0.;
       }
-      if (s_ab) {
-         ab0 = s_ab[i];
-         h0 = s_h[i];
-         bb0 = s_bb[i];
-         hbp0 = s_hbp[i];
-         sf0 = s_sf[i];
+      if (sbat_ab) {
+         ab0 = sbat_ab[i];
+         h0 = sbat_h[i];
+         bb0 = sbat_bb[i];
+         hbp0 = sbat_hbp[i];
+         sf0 = sbat_sf[i];
          t_ab0 += ab0;
          t_h0 += h0;
          t_bb0 += bb0;
@@ -988,20 +996,20 @@ void boxscore(char *name, struct statdata stat[],
          t_hbp0 = 0;
          t_sf0 = 0;
       }
-      ab0 += stat[i].ab;
-      h0 += stat[i].h;
-      bb0 += stat[i].bb;
-      hbp0 += stat[i].hbp;
-      sf0 += stat[i].sf;
+      ab0 += batstat[i].ab;
+      h0 += batstat[i].h;
+      bb0 += batstat[i].bb;
+      hbp0 += batstat[i].hbp;
+      sf0 += batstat[i].sf;
       if (ab0 > 0) {
          savg = (double) h0 / ab0;
       }
       else {
          savg = 0.;
       }
-      if ((stat[i].ab + stat[i].bb + stat[i].hbp + stat[i].sf) > 0) {
-         gobp = (double) (stat[i].h + stat[i].bb + stat[i].hbp) /
-           (stat[i].ab + stat[i].bb + stat[i].hbp + stat[i].sf);
+      if ((batstat[i].ab + batstat[i].bb + batstat[i].hbp + batstat[i].sf) > 0) {
+         gobp = (double) (batstat[i].h + batstat[i].bb + batstat[i].hbp) /
+           (batstat[i].ab + batstat[i].bb + batstat[i].hbp + batstat[i].sf);
       }
       else {
          gobp = 0.;
@@ -1013,22 +1021,22 @@ void boxscore(char *name, struct statdata stat[],
          sobp = 0.;
       }
       printf("%4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %6.3f %6.3f %6.3f %6.3f\n",
-         i+1, stat[i].pa, stat[i].ab, stat[i].r, stat[i].h, stat[i].rbi,
-         stat[i].bb, stat[i].so, stat[i].lob, stat[i].s, stat[i].d,
-         stat[i].t, stat[i].hr, stat[i].gdp, gavg, savg, gobp, sobp);
-      pa  += stat[i].pa;
-      ab  += stat[i].ab;
-      r   += stat[i].r;
-      h   += stat[i].h;
-      rbi += stat[i].rbi;
-      bb  += stat[i].bb;
-      so  += stat[i].so;
-      lob += stat[i].lob;
-      s   += stat[i].s;
-      d   += stat[i].d;
-      t   += stat[i].t;
-      hr  += stat[i].hr;
-      gdp += stat[i].gdp;
+         i+1, batstat[i].pa, batstat[i].ab, batstat[i].r, batstat[i].h, batstat[i].rbi,
+         batstat[i].bb, batstat[i].so, batstat[i].lob, batstat[i].s, batstat[i].d,
+         batstat[i].t, batstat[i].hr, batstat[i].gdp, gavg, savg, gobp, sobp);
+      pa  += batstat[i].pa;
+      ab  += batstat[i].ab;
+      r   += batstat[i].r;
+      h   += batstat[i].h;
+      rbi += batstat[i].rbi;
+      bb  += batstat[i].bb;
+      so  += batstat[i].so;
+      lob += batstat[i].lob;
+      s   += batstat[i].s;
+      d   += batstat[i].d;
+      t   += batstat[i].t;
+      hr  += batstat[i].hr;
+      gdp += batstat[i].gdp;
    }
 
    if (ab > 0) {
@@ -1063,14 +1071,69 @@ void boxscore(char *name, struct statdata stat[],
 
    printf("%-4s %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %6.3f %6.3f %6.3f %6.3f\n",
       "TOT", pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, gavg, savg, gobp, sobp);
+
+   printf("%4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %6s %6s\n",
+     "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR", "GDP",
+     "AVG", "SAVG");
+   for (i=0; i<1; i++) {
+      if (pitstat[i].ab > 0) {
+         gavg = (double) pitstat[i].h / pitstat[i].ab;
+      }
+      else {
+         gavg = 0.;
+      }
+      if (spit_ab) {
+         ab0 = spit_ab[i];
+         h0 = spit_h[i];
+         bb0 = spit_bb[i];
+         hbp0 = spit_hbp[i];
+         sf0 = spit_sf[i];
+         t_ab0 += ab0;
+         t_h0 += h0;
+         t_bb0 += bb0;
+         t_hbp0 += hbp0;
+         t_sf0 += sf0;
+      }
+      else {
+         ab0 = 0;
+         h0 = 0;
+         bb0 = 0;
+         hbp0 = 0;
+         sf0 = 0;
+         t_ab0 = 0;
+         t_h0 = 0;
+         t_bb0 = 0;
+         t_hbp0 = 0;
+         t_sf0 = 0;
+      }
+      ab0 += pitstat[i].ab;
+      h0 += pitstat[i].h;
+      bb0 += pitstat[i].bb;
+      hbp0 += pitstat[i].hbp;
+      sf0 += pitstat[i].sf;
+      if (ab0 > 0) {
+         savg = (double) h0 / ab0;
+      }
+      else {
+         savg = 0.;
+      }
+      printf("%4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %6.3f %6.3f\n",
+         i+1, pitstat[i].pa, pitstat[i].ab, pitstat[i].r, pitstat[i].h, pitstat[i].rbi,
+         pitstat[i].bb, pitstat[i].so, pitstat[i].lob, pitstat[i].s, pitstat[i].d,
+         pitstat[i].t, pitstat[i].hr, pitstat[i].gdp, gavg, savg);
+   }
 }
 
 void match(int g, char *aName, char *hName, struct batdata abat[],
            struct batdata hbat[], struct batdata *lbat,
            struct batdata *apit, struct batdata *hpit, struct batdata *lpit,
-           struct statdata astat[], struct statdata hstat[], int *awP, int *hwP,
-           int saab[], int sah[], int sabb[], int sahbp[], int sasf[],
-           int shab[], int shh[], int shbb[], int shhbp[], int shsf[])
+           struct statdata abatstat[], struct statdata apitstat[],
+           struct statdata hbatstat[], struct statdata hpitstat[],
+           int *awP, int *hwP,
+           int sbat_aab[], int sbat_ah[], int sbat_abb[], int sbat_ahbp[], int sbat_asf[],
+           int spit_aab[], int spit_ah[], int spit_abb[], int spit_ahbp[], int spit_asf[],
+           int sbat_hab[], int sbat_hh[], int sbat_hbb[], int sbat_hhbp[], int sbat_hsf[],
+           int spit_hab[], int spit_hh[], int spit_hbb[], int spit_hhbp[], int spit_hsf[])
 {
    int i = 0;
    int ar = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
@@ -1103,7 +1166,7 @@ void match(int g, char *aName, char *hName, struct batdata abat[],
          clearmem(idx,extra,ahiP,ariP,hhiP,hriP);
       }
 
-      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, astat, &alob);
+      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, abatstat, hpitstat, &alob);
       printf("i:%d, ariP[i]:%d, ahiP[i]:%d, alob:%d\n", i, ariP[i], ahiP[i], alob);
       alo = alo + alob;
       ar = ar + ariP[i];
@@ -1113,7 +1176,7 @@ void match(int g, char *aName, char *hName, struct batdata abat[],
       }
       printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
 
-      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hstat, &hlob);
+      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hbatstat, apitstat, &hlob);
       printf("i:%d, hriP[i]:%d, hhiP[i]:%d, hlob:%d\n", i, hriP[i], hhiP[i], hlob);
       hlo = hlo + hlob;
       hr = hr + hriP[i];
@@ -1134,17 +1197,19 @@ void match(int g, char *aName, char *hName, struct batdata abat[],
 
    printf("Game: %d\n", g+1);
    linescore(i,aName,hName,ahiP,ariP,ar,alo,hhiP,hriP,hr,hlo,g,awP,hwP);
-   boxscore(aName,astat, saab, sah, sabb, sahbp, sasf);
-   boxscore(hName,hstat, shab, shh, shbb, shhbp, shsf);
+   boxscore(aName,abatstat,apitstat,sbat_aab,sbat_ah,sbat_abb,sbat_ahbp,sbat_asf,
+            spit_aab,spit_ah,spit_abb,spit_ahbp,spit_asf);
+   boxscore(hName,hbatstat,hpitstat,sbat_hab,sbat_hh,sbat_hbb,sbat_hhbp,sbat_hsf,
+            spit_hab,spit_hh,spit_hbb,spit_hhbp,spit_hsf);
    free(ahiP);
    free(ariP);
    free(hhiP);
    free(hriP);
 }
 
-void addstat(struct statdata g_stat[], struct statdata s_stat[]) {
+void addstat(struct statdata g_stat[], struct statdata s_stat[], int n) {
    int i;
-   for (i=0; i<9; i++) {
+   for (i=0; i<n; i++) {
       s_stat[i].pa  += g_stat[i].pa;
       s_stat[i].ab  += g_stat[i].ab;
       s_stat[i].r   += g_stat[i].r;
@@ -1166,56 +1231,96 @@ void addstat(struct statdata g_stat[], struct statdata s_stat[]) {
 void matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdata *lbat,
               struct batdata *apit, struct batdata *hpit, struct batdata *lpit)
 {
-   struct statdata s_astat[9] = { 0 };
-   struct statdata s_hstat[9] = { 0 };
-   struct statdata g_astat[9] = { 0 };
-   struct statdata g_hstat[9] = { 0 };
-   int saab[9] = { 0 };
-   int sah[9] = { 0 };
-   int sabb[9] = { 0 };
-   int sahbp[9] = { 0 };
-   int sasf[9] = { 0 };
-   int shab[9] = { 0 };
-   int shh[9] = { 0 };
-   int shbb[9] = { 0 };
-   int shhbp[9] = { 0 };
-   int shsf[9] = { 0 };
+   struct statdata s_abatstat[9] = { 0 };
+   struct statdata s_hbatstat[9] = { 0 };
+   struct statdata g_abatstat[9] = { 0 };
+   struct statdata g_hbatstat[9] = { 0 };
+   struct statdata s_apitstat[1] = { 0 };
+   struct statdata s_hpitstat[1] = { 0 };
+   struct statdata g_apitstat[1] = { 0 };
+   struct statdata g_hpitstat[1] = { 0 };
+   int sbat_aab[9] = { 0 };
+   int sbat_ah[9] = { 0 };
+   int sbat_abb[9] = { 0 };
+   int sbat_ahbp[9] = { 0 };
+   int sbat_asf[9] = { 0 };
+   int sbat_hab[9] = { 0 };
+   int sbat_hh[9] = { 0 };
+   int sbat_hbb[9] = { 0 };
+   int sbat_hhbp[9] = { 0 };
+   int sbat_hsf[9] = { 0 };
+   int spit_aab[1] = { 0 };
+   int spit_ah[1] = { 0 };
+   int spit_abb[1] = { 0 };
+   int spit_ahbp[1] = { 0 };
+   int spit_asf[1] = { 0 };
+   int spit_hab[1] = { 0 };
+   int spit_hh[1] = { 0 };
+   int spit_hbb[1] = { 0 };
+   int spit_hhbp[1] = { 0 };
+   int spit_hsf[1] = { 0 };
    int i, j, aw = 0, hw = 0;
 
    for (i=0; i<n; i++) {
-      memset(g_astat,0,sizeof(struct statdata)*9);
-      memset(g_hstat,0,sizeof(struct statdata)*9);
+      memset(g_abatstat,0,sizeof(struct statdata)*9);
+      memset(g_apitstat,0,sizeof(struct statdata)*1);
+      memset(g_hbatstat,0,sizeof(struct statdata)*9);
+      memset(g_hpitstat,0,sizeof(struct statdata)*1);
       for (j=0; j<9; j++) {
-         saab[j]  = s_astat[j].ab;
-         sah[j]   = s_astat[j].h;
-         sabb[j]  = s_astat[j].bb;
-         sahbp[j] = s_astat[j].hbp;
-         sasf[j]  = s_astat[j].sf;
-         shab[j]  = s_hstat[j].ab;
-         shh[j]   = s_hstat[j].h;
-         shbb[j]  = s_hstat[j].bb;
-         shhbp[j] = s_hstat[j].hbp;
-         shsf[j]  = s_hstat[j].sf;
+         sbat_aab[j]  = s_abatstat[j].ab;
+         sbat_ah[j]   = s_abatstat[j].h;
+         sbat_abb[j]  = s_abatstat[j].bb;
+         sbat_ahbp[j] = s_abatstat[j].hbp;
+         sbat_asf[j]  = s_abatstat[j].sf;
+         sbat_hab[j]  = s_hbatstat[j].ab;
+         sbat_hh[j]   = s_hbatstat[j].h;
+         sbat_hbb[j]  = s_hbatstat[j].bb;
+         sbat_hhbp[j] = s_hbatstat[j].hbp;
+         sbat_hsf[j]  = s_hbatstat[j].sf;
+      }
+      for (j=0; j<1; j++) {
+         spit_aab[j]  = s_apitstat[j].ab;
+         spit_ah[j]   = s_apitstat[j].h;
+         spit_abb[j]  = s_apitstat[j].bb;
+         spit_ahbp[j] = s_apitstat[j].hbp;
+         spit_asf[j]  = s_apitstat[j].sf;
+         spit_hab[j]  = s_hpitstat[j].ab;
+         spit_hh[j]   = s_hpitstat[j].h;
+         spit_hbb[j]  = s_hpitstat[j].bb;
+         spit_hhbp[j] = s_hpitstat[j].hbp;
+         spit_hsf[j]  = s_hpitstat[j].sf;
       }
 
       if (i%2 == 0) {
          match(i, "Blue", "Red", abat, hbat, lbat, apit, hpit, lpit,
-               g_astat, g_hstat, &aw, &hw,
-               saab, sah, sabb, sahbp, sasf, shab, shh, shbb, shhbp, shsf);
-         addstat(g_astat, s_astat);
-         addstat(g_hstat, s_hstat);
+               g_abatstat, g_apitstat, g_hbatstat, g_hpitstat, &aw, &hw,
+               sbat_aab, sbat_ah, sbat_abb, sbat_ahbp, sbat_asf,
+               spit_aab, spit_ah, spit_abb, spit_ahbp, spit_asf,
+               sbat_hab, sbat_hh, sbat_hbb, sbat_hhbp, sbat_hsf,
+               spit_hab, spit_hh, spit_hbb, spit_hhbp, spit_hsf);
+         addstat(g_abatstat, s_abatstat, 9);
+         addstat(g_apitstat, s_apitstat, 1);
+         addstat(g_hbatstat, s_hbatstat, 9);
+         addstat(g_hpitstat, s_hpitstat, 1);
       }
       else {
          match(i, "Red", "Blue", hbat, abat, lbat, hpit, apit, lpit,
-               g_hstat, g_astat, &hw, &aw,
-               shab, shh, shbb, shhbp, shsf, saab, sah, sabb, sahbp, sasf);
-         addstat(g_hstat, s_hstat);
-         addstat(g_astat, s_astat);
+               g_hbatstat, g_hpitstat, g_abatstat, g_apitstat, &hw, &aw,
+               sbat_hab, sbat_hh, sbat_hbb, sbat_hhbp, sbat_hsf,
+               spit_hab, spit_hh, spit_hbb, spit_hhbp, spit_hsf,
+               sbat_aab, sbat_ah, sbat_abb, sbat_ahbp, sbat_asf,
+               spit_aab, spit_ah, spit_abb, spit_ahbp, spit_asf);
+         addstat(g_hbatstat, s_hbatstat, 9);
+         addstat(g_hpitstat, s_hpitstat, 1);
+         addstat(g_abatstat, s_abatstat, 9);
+         addstat(g_apitstat, s_apitstat, 1);
       }
    }
    printf("\n");
-   boxscore("Blue",s_astat, NULL, NULL, NULL, NULL, NULL);
-   boxscore("Red", s_hstat, NULL, NULL, NULL, NULL, NULL);
+   boxscore("Blue",s_abatstat, s_apitstat,NULL, NULL, NULL, NULL, NULL,
+            NULL, NULL, NULL, NULL, NULL);
+   boxscore("Red", s_hbatstat, s_hpitstat,NULL, NULL, NULL, NULL, NULL,
+            NULL, NULL, NULL, NULL, NULL);
 }
 
 void readvals(struct batdata *dataP) {
