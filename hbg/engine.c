@@ -5,6 +5,9 @@
 #include <string.h>
 #include <time.h>
 
+#define NUM_BATTERS  9
+#define NUM_PITCHERS 6
+
 struct batdata {
    int pa;
    int ab;
@@ -58,11 +61,11 @@ int    roll(void);
 long   myround(double x);
 void   defaultprob(int p[]);
 void   initrand(int p[], int n, struct batdata *bat, struct batdata *lbat,
-                struct batdata *pit, struct batdata *lpit);
+                struct batdata pit[], int pitIdx, struct batdata *lpit);
 int    maprand(int p[], int n, int z0);
 int    genrand(int p[], int n);
 void   side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
-            int li_base, struct statdata batstatp[], struct statdata pitstatp[], int *lob);
+            int li_base, struct statdata batstatp[], struct statdata pitstatp[], int pitIdx, int *lob);
 void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
 void   clearmem(int idx, int c, int ahiP[], int ariP[], int hhiP[], int hriP[]);
 void   linescore(int i, char *aName, char *hName, int ahiP[], int ariP[],
@@ -74,7 +77,7 @@ void   boxscore(char *name, struct statdata batstat[], struct statdata pitstat[]
 void   addstat(struct statdata g_stat[], struct statdata s_stat[], int n);
 void   match(int g, char *aName, char *hName, struct batdata abat[],
              struct batdata hbat[], struct batdata *lbat,
-             struct batdata *apit, struct batdata *hpit, struct batdata *lpit,
+             struct batdata apit[], struct batdata hpit[], struct batdata *lpit,
              struct statdata abatstat[], struct statdata apitstat[],
              struct statdata hstat[], struct statdata hpitstat[],
              int *awP, int *hwP,
@@ -83,7 +86,7 @@ void   match(int g, char *aName, char *hName, struct batdata abat[],
              int sbat_hab[], int sbat_hh[], int sbat_hbb[], int sbat_hhbp[], int sbat_hsf[],
              int spit_hab[], int spit_hh[], int spit_hbb[], int spit_hhbp[], int spit_hsf[]);
 void   matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdata *lbat,
-                struct batdata *apit, struct batdata *hpit, struct batdata *lpit);
+                struct batdata apit[], struct batdata hpit[], struct batdata *lpit);
 void   readvals(struct batdata *dataP);
 
 /*
@@ -591,26 +594,27 @@ int log5calc(double b, double bl, double p, double pl) {
 }
 
 void setprob(int p[], struct batdata *bat, struct batdata *lbat,
-             struct batdata *pit, struct batdata *lpit)
+             struct batdata pit[], int pitIdx, struct batdata *lpit)
 {
    int t = 0;
    int p0[10], p_hr;
+   struct batdata *pitP = &pit[pitIdx];
 
    p0[0] = 0;
-   p0[1] = log5calc((double)bat->t/bat->pa, (double)lbat->t/lbat->pa, (double)pit->t/pit->pa, (double)lpit->t/lpit->pa);
+   p0[1] = log5calc((double)bat->t/bat->pa, (double)lbat->t/lbat->pa, (double)pitP->t/pitP->pa, (double)lpit->t/lpit->pa);
    t += p0[1];
-   p0[2] = log5calc((double)bat->d/bat->pa, (double)lbat->d/lbat->pa, (double)pit->d/pit->pa, (double)lpit->d/lpit->pa);
+   p0[2] = log5calc((double)bat->d/bat->pa, (double)lbat->d/lbat->pa, (double)pitP->d/pitP->pa, (double)lpit->d/lpit->pa);
    t += p0[2];
-   p0[3] = log5calc((double)bat->bb/bat->pa, (double)lbat->bb/lbat->pa, (double)pit->bb/pit->pa, (double)lpit->bb/lpit->pa);
+   p0[3] = log5calc((double)bat->bb/bat->pa, (double)lbat->bb/lbat->pa, (double)pitP->bb/pitP->pa, (double)lpit->bb/lpit->pa);
    t += p0[3];
-   p0[6] = log5calc((double)bat->s/bat->pa, (double)lbat->s/lbat->pa, (double)pit->s/pit->pa, (double)lpit->s/lpit->pa);
+   p0[6] = log5calc((double)bat->s/bat->pa, (double)lbat->s/lbat->pa, (double)pitP->s/pitP->pa, (double)lpit->s/lpit->pa);
    t += p0[6];
-   p0[7] = log5calc((double)bat->so/bat->pa, (double)lbat->so/lbat->pa, (double)pit->so/pit->pa, (double)lpit->so/lpit->pa);
+   p0[7] = log5calc((double)bat->so/bat->pa, (double)lbat->so/lbat->pa, (double)pitP->so/pitP->pa, (double)lpit->so/lpit->pa);
    t += p0[7];
    p0[8] = p0[7];
-   p0[9] = log5calc((double)bat->gdp/bat->pa, (double)lbat->gdp/lbat->pa, (double)pit->gdp/pit->pa, (double)lpit->gdp/lpit->pa);
+   p0[9] = log5calc((double)bat->gdp/bat->pa, (double)lbat->gdp/lbat->pa, (double)pitP->gdp/pitP->pa, (double)lpit->gdp/lpit->pa);
    t += p0[9];
-   p_hr = log5calc((double)bat->hr/bat->pa, (double)lbat->hr/lbat->pa, (double)pit->hr/pit->pa, (double)lpit->hr/lpit->pa);
+   p_hr = log5calc((double)bat->hr/bat->pa, (double)lbat->hr/lbat->pa, (double)pitP->hr/pitP->pa, (double)lpit->hr/lpit->pa);
    t += p_hr;
    p0[4] = (1000 - t)/2;
    t += p0[4];
@@ -643,7 +647,7 @@ void setprob(int p[], struct batdata *bat, struct batdata *lbat,
 }
 
 void initrand(int p[], int n, struct batdata *bat, struct batdata *lbat,
-              struct batdata *pit, struct batdata *lpit)
+              struct batdata pit[], int pitIdx, struct batdata *lpit)
 {
 #if DEBUG
    int i;
@@ -652,13 +656,14 @@ void initrand(int p[], int n, struct batdata *bat, struct batdata *lbat,
       defaultprob(p);
    }
    else {
-      setprob(p, bat, lbat, pit, lpit);
+      setprob(p, bat, lbat, pit, pitIdx, lpit);
    }
 
 #if DEBUG
    for (i=0; i<n; i++) {
-      printf("i:%2d, p[%d]: %4d\n", i, i, p[i]);
+      printf("i:%2d, p[%d]: %4d, pitIdx:%d\n", i, i, p[i], pitIdx);
    }
+   printf("\n");
 #endif
 }
 
@@ -774,7 +779,7 @@ void stat(struct statdata stats[], int idx, int result, int gdp, int rbi, int lo
 }
 
 void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
-          int li_base, struct statdata batstatp[], struct statdata pitstatp[], int *lob)
+          int li_base, struct statdata batstatp[], struct statdata pitstatp[], int pitIdx, int *lob)
 {
    int j;
    int z;
@@ -831,14 +836,14 @@ void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *
                rs++;
             }
             statrun(batstatp,rli[j],z);
-            statrun(pitstatp,0,z);
+            statrun(pitstatp,pitIdx,z);
          }
       }
 
       printf("%02d (%d): i:%-2d o:%d gdp:%d rlo:%d rbi:%d rs:%d z:%-2d rc:%s\n",
         *li, idx, i+1, o, gdp, rlo, rbi, rs, z, result_code(z));
       stat(batstatp,idx,z,gdp,rbi,rlo);
-      stat(pitstatp,0,z,gdp,0,0);
+      stat(pitstatp,pitIdx,z,gdp,0,0);
 
       if (z != 2 && z != 10) {
          *li = *li + 1;
@@ -965,7 +970,7 @@ void boxscore(char *name, struct statdata batstat[], struct statdata pitstat[],
    printf("%4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %6s %6s %6s %6s\n",
      "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR",
      "GDP", "AVG", "SAVG", "OBP", "SOBP");
-   for(i=0; i<9; i++) {
+   for(i=0; i<NUM_BATTERS; i++) {
       if (batstat[i].ab > 0) {
          gavg = (double) batstat[i].h / batstat[i].ab;
       }
@@ -1075,7 +1080,7 @@ void boxscore(char *name, struct statdata batstat[], struct statdata pitstat[],
    printf("%4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %6s %6s\n",
      "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR", "GDP",
      "AVG", "SAVG");
-   for (i=0; i<1; i++) {
+   for (i=0; i<NUM_PITCHERS; i++) {
       if (pitstat[i].ab > 0) {
          gavg = (double) pitstat[i].h / pitstat[i].ab;
       }
@@ -1126,7 +1131,7 @@ void boxscore(char *name, struct statdata batstat[], struct statdata pitstat[],
 
 void match(int g, char *aName, char *hName, struct batdata abat[],
            struct batdata hbat[], struct batdata *lbat,
-           struct batdata *apit, struct batdata *hpit, struct batdata *lpit,
+           struct batdata apit[], struct batdata hpit[], struct batdata *lpit,
            struct statdata abatstat[], struct statdata apitstat[],
            struct statdata hbatstat[], struct statdata hpitstat[],
            int *awP, int *hwP,
@@ -1138,21 +1143,22 @@ void match(int g, char *aName, char *hName, struct batdata abat[],
    int i = 0;
    int ar = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
    int hr = 0, hlo = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
-   struct probdata ap[9];
-   struct probdata hp[9];
+   struct probdata ap[NUM_BATTERS];
+   struct probdata hp[NUM_BATTERS];
    int n = sizeof(ap[0].p)/sizeof(int);
    int c = 2;
    int alob = 0, hlob = 0;
+   int pitIdx = g % 6;
 
    initmem(c, &ahiP, &ariP, &hhiP, &hriP);
-   for (i=0; i<9; i++) {
+   for (i=0; i<NUM_BATTERS; i++) {
       if (abat) {
-         initrand(ap[i].p, n, &abat[i], lbat, hpit, lpit);
-         initrand(hp[i].p, n, &hbat[i], lbat, apit, lpit);
+         initrand(ap[i].p, n, &abat[i], lbat, hpit, pitIdx, lpit);
+         initrand(hp[i].p, n, &hbat[i], lbat, apit, pitIdx, lpit);
       }
       else {
-         initrand(ap[i].p, n, NULL, NULL, NULL, NULL);
-         initrand(hp[i].p, n, NULL, NULL, NULL, NULL);
+         initrand(ap[i].p, n, NULL, NULL, NULL, 0, NULL);
+         initrand(hp[i].p, n, NULL, NULL, NULL, 0, NULL);
       }
    }
 
@@ -1166,7 +1172,7 @@ void match(int g, char *aName, char *hName, struct batdata abat[],
          clearmem(idx,extra,ahiP,ariP,hhiP,hriP);
       }
 
-      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, abatstat, hpitstat, &alob);
+      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, abatstat, hpitstat, pitIdx, &alob);
       printf("i:%d, ariP[i]:%d, ahiP[i]:%d, alob:%d\n", i, ariP[i], ahiP[i], alob);
       alo = alo + alob;
       ar = ar + ariP[i];
@@ -1176,7 +1182,7 @@ void match(int g, char *aName, char *hName, struct batdata abat[],
       }
       printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
 
-      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hbatstat, apitstat, &hlob);
+      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hbatstat, apitstat, pitIdx, &hlob);
       printf("i:%d, hriP[i]:%d, hhiP[i]:%d, hlob:%d\n", i, hriP[i], hhiP[i], hlob);
       hlo = hlo + hlob;
       hr = hr + hriP[i];
@@ -1229,44 +1235,44 @@ void addstat(struct statdata g_stat[], struct statdata s_stat[], int n) {
 }
 
 void matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdata *lbat,
-              struct batdata *apit, struct batdata *hpit, struct batdata *lpit)
+              struct batdata apit[], struct batdata hpit[], struct batdata *lpit)
 {
-   struct statdata s_abatstat[9] = { 0 };
-   struct statdata s_hbatstat[9] = { 0 };
-   struct statdata g_abatstat[9] = { 0 };
-   struct statdata g_hbatstat[9] = { 0 };
-   struct statdata s_apitstat[1] = { 0 };
-   struct statdata s_hpitstat[1] = { 0 };
-   struct statdata g_apitstat[1] = { 0 };
-   struct statdata g_hpitstat[1] = { 0 };
-   int sbat_aab[9] = { 0 };
-   int sbat_ah[9] = { 0 };
-   int sbat_abb[9] = { 0 };
-   int sbat_ahbp[9] = { 0 };
-   int sbat_asf[9] = { 0 };
-   int sbat_hab[9] = { 0 };
-   int sbat_hh[9] = { 0 };
-   int sbat_hbb[9] = { 0 };
-   int sbat_hhbp[9] = { 0 };
-   int sbat_hsf[9] = { 0 };
-   int spit_aab[1] = { 0 };
-   int spit_ah[1] = { 0 };
-   int spit_abb[1] = { 0 };
-   int spit_ahbp[1] = { 0 };
-   int spit_asf[1] = { 0 };
-   int spit_hab[1] = { 0 };
-   int spit_hh[1] = { 0 };
-   int spit_hbb[1] = { 0 };
-   int spit_hhbp[1] = { 0 };
-   int spit_hsf[1] = { 0 };
+   struct statdata s_abatstat[NUM_BATTERS] = { 0 };
+   struct statdata s_hbatstat[NUM_BATTERS] = { 0 };
+   struct statdata g_abatstat[NUM_BATTERS] = { 0 };
+   struct statdata g_hbatstat[NUM_BATTERS] = { 0 };
+   struct statdata s_apitstat[NUM_PITCHERS] = { 0 };
+   struct statdata s_hpitstat[NUM_PITCHERS] = { 0 };
+   struct statdata g_apitstat[NUM_PITCHERS] = { 0 };
+   struct statdata g_hpitstat[NUM_PITCHERS] = { 0 };
+   int sbat_aab[NUM_BATTERS] = { 0 };
+   int sbat_ah[NUM_BATTERS] = { 0 };
+   int sbat_abb[NUM_BATTERS] = { 0 };
+   int sbat_ahbp[NUM_BATTERS] = { 0 };
+   int sbat_asf[NUM_BATTERS] = { 0 };
+   int sbat_hab[NUM_BATTERS] = { 0 };
+   int sbat_hh[NUM_BATTERS] = { 0 };
+   int sbat_hbb[NUM_BATTERS] = { 0 };
+   int sbat_hhbp[NUM_BATTERS] = { 0 };
+   int sbat_hsf[NUM_BATTERS] = { 0 };
+   int spit_aab[NUM_PITCHERS] = { 0 };
+   int spit_ah[NUM_PITCHERS] = { 0 };
+   int spit_abb[NUM_PITCHERS] = { 0 };
+   int spit_ahbp[NUM_PITCHERS] = { 0 };
+   int spit_asf[NUM_PITCHERS] = { 0 };
+   int spit_hab[NUM_PITCHERS] = { 0 };
+   int spit_hh[NUM_PITCHERS] = { 0 };
+   int spit_hbb[NUM_PITCHERS] = { 0 };
+   int spit_hhbp[NUM_PITCHERS] = { 0 };
+   int spit_hsf[NUM_PITCHERS] = { 0 };
    int i, j, aw = 0, hw = 0;
 
    for (i=0; i<n; i++) {
-      memset(g_abatstat,0,sizeof(struct statdata)*9);
-      memset(g_apitstat,0,sizeof(struct statdata)*1);
-      memset(g_hbatstat,0,sizeof(struct statdata)*9);
-      memset(g_hpitstat,0,sizeof(struct statdata)*1);
-      for (j=0; j<9; j++) {
+      memset(g_abatstat,0,sizeof(struct statdata)*NUM_BATTERS);
+      memset(g_apitstat,0,sizeof(struct statdata)*NUM_PITCHERS);
+      memset(g_hbatstat,0,sizeof(struct statdata)*NUM_BATTERS);
+      memset(g_hpitstat,0,sizeof(struct statdata)*NUM_PITCHERS);
+      for (j=0; j<NUM_BATTERS; j++) {
          sbat_aab[j]  = s_abatstat[j].ab;
          sbat_ah[j]   = s_abatstat[j].h;
          sbat_abb[j]  = s_abatstat[j].bb;
@@ -1278,7 +1284,7 @@ void matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdat
          sbat_hhbp[j] = s_hbatstat[j].hbp;
          sbat_hsf[j]  = s_hbatstat[j].sf;
       }
-      for (j=0; j<1; j++) {
+      for (j=0; j<NUM_PITCHERS; j++) {
          spit_aab[j]  = s_apitstat[j].ab;
          spit_ah[j]   = s_apitstat[j].h;
          spit_abb[j]  = s_apitstat[j].bb;
@@ -1298,10 +1304,10 @@ void matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdat
                spit_aab, spit_ah, spit_abb, spit_ahbp, spit_asf,
                sbat_hab, sbat_hh, sbat_hbb, sbat_hhbp, sbat_hsf,
                spit_hab, spit_hh, spit_hbb, spit_hhbp, spit_hsf);
-         addstat(g_abatstat, s_abatstat, 9);
-         addstat(g_apitstat, s_apitstat, 1);
-         addstat(g_hbatstat, s_hbatstat, 9);
-         addstat(g_hpitstat, s_hpitstat, 1);
+         addstat(g_abatstat, s_abatstat, NUM_BATTERS);
+         addstat(g_apitstat, s_apitstat, NUM_PITCHERS);
+         addstat(g_hbatstat, s_hbatstat, NUM_BATTERS);
+         addstat(g_hpitstat, s_hpitstat, NUM_PITCHERS);
       }
       else {
          match(i, "Red", "Blue", hbat, abat, lbat, hpit, apit, lpit,
@@ -1310,10 +1316,10 @@ void matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdat
                spit_hab, spit_hh, spit_hbb, spit_hhbp, spit_hsf,
                sbat_aab, sbat_ah, sbat_abb, sbat_ahbp, sbat_asf,
                spit_aab, spit_ah, spit_abb, spit_ahbp, spit_asf);
-         addstat(g_hbatstat, s_hbatstat, 9);
-         addstat(g_hpitstat, s_hpitstat, 1);
-         addstat(g_abatstat, s_abatstat, 9);
-         addstat(g_apitstat, s_apitstat, 1);
+         addstat(g_hbatstat, s_hbatstat, NUM_BATTERS);
+         addstat(g_hpitstat, s_hpitstat, NUM_PITCHERS);
+         addstat(g_abatstat, s_abatstat, NUM_BATTERS);
+         addstat(g_apitstat, s_apitstat, NUM_PITCHERS);
       }
    }
    printf("\n");
@@ -1369,41 +1375,45 @@ int main(int argc, char *argv[]) {
          if (argc > 2) {
 #if !defined(USE_DICE)
             int i;
-            struct batdata abat[9];
-            struct batdata hbat[9];
+            struct batdata abat[NUM_BATTERS];
+            struct batdata hbat[NUM_BATTERS];
             struct batdata lbat;
-            struct batdata apit;
-            struct batdata hpit;
+            struct batdata apit[NUM_PITCHERS];
+            struct batdata hpit[NUM_PITCHERS];
             struct batdata lpit;
 
-            for (i=0; i<9; i++) {
+            for (i=0; i<NUM_BATTERS; i++) {
                readvals(&abat[i]);
             }
-            for (i=0; i<9; i++) {
+            for (i=0; i<NUM_BATTERS; i++) {
                readvals(&hbat[i]);
             }
             readvals(&lbat);
-            readvals(&apit);
-            readvals(&hpit);
+            for (i=0; i<NUM_PITCHERS; i++) {
+               readvals(&apit[i]);
+            }
+            for (i=0; i<NUM_PITCHERS; i++) {
+               readvals(&hpit[i]);
+            }
             readvals(&lpit);
 
             printf("using input values to build probability tables\n");
-            matchset(20, abat, hbat, &lbat, &apit, &hpit, &lpit);
+            matchset(162, abat, hbat, &lbat, apit, hpit, &lpit);
 #else
             printf("using dice to build probability tables\n");
-            matchset(20, NULL, NULL, NULL, NULL, NULL, NULL);
+            matchset(162, NULL, NULL, NULL, NULL, NULL, NULL);
 #endif
          }
          else {
             printf("using dice to build probability tables\n");
-            matchset(20, NULL, NULL, NULL, NULL, NULL, NULL);
+            matchset(162, NULL, NULL, NULL, NULL, NULL, NULL);
          }
       }
    }
    else {
       initialize(-1);
       printf("using dice to build probability tables\n");
-      matchset(20, NULL, NULL, NULL, NULL, NULL, NULL);
+      matchset(162, NULL, NULL, NULL, NULL, NULL, NULL);
    }
 
    exit(0);
