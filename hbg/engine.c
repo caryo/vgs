@@ -8,6 +8,9 @@
 #define NUM_BATTERS  9
 #define NUM_PITCHERS 6
 
+#define NUM_TEAMS    2
+#define NUM_LEAGUES  1
+
 struct batdata {
    int pa;
    int ab;
@@ -54,6 +57,26 @@ struct probdata {
    int p[12];
 };
 
+struct team_data {
+   struct batdata   bat[NUM_BATTERS];
+   struct batdata   pit[NUM_PITCHERS];
+   struct probdata  batp[NUM_BATTERS];
+   struct bstatdata b_stat[NUM_BATTERS];
+   struct bstatdata p_bstat[NUM_PITCHERS];
+   struct pstatdata p_pstat[NUM_PITCHERS];
+};
+
+struct league_data {
+   struct batdata   bat;
+   struct batdata   pit;
+};
+
+struct game_data {
+   struct team_data   away;
+   struct team_data   home;
+   struct league_data league;
+};
+
 void   onbase(int ob[], int li);
 int    offbase(int ob[]);
 int    advance(int a, int *b, int *c, int *r1, int *r2);
@@ -67,8 +90,13 @@ void   stat(struct bstatdata stats[], int idx, int result, int gdp, int rbi, int
 int    roll(void);
 long   myround(double x);
 void   defaultprob(int p[]);
-void   initrand(int p[], int n, struct batdata *bat, struct batdata *lbat,
-                struct batdata pit[], int pitIdx, struct batdata *lpit);
+void   setprob(int p[], struct team_data team[], struct league_data league[],
+               int aTeamIdx, int aLeagueIdx, int batIdx,
+               int bTeamIdx, int bLeagueIdx, int pitIdx);
+void   initrand(int p[], int n,
+                struct team_data team[], struct league_data league[],
+                int aTeamIdx, int aLeagueIdx, int batIdx,
+                int bTeamIdx, int bLeagueIdx, int pitIdx);
 int    maprand(int p[], int n, int z0);
 int    genrand(int p[], int n);
 void   side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
@@ -86,8 +114,8 @@ void   boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbsta
 void   addstat(struct bstatdata g_stat[], struct bstatdata s_stat[], int n);
 void   addpstat(struct pstatdata g_stat[], struct pstatdata s_stat[], int n);
 void   match(int g, char *aName, char *hName,
-             struct batdata abat[], struct batdata hbat[], struct batdata *lbat,
-             struct batdata apit[], struct batdata hpit[], struct batdata *lpit,
+             struct team_data team[], struct league_data league[],
+             int aTeamIdx, int aLeagueIdx, int hTeamIdx, int hLeagueIdx,
              struct bstatdata abatstat[], struct bstatdata apitbstat[],
              struct pstatdata apitpstat[],
              struct bstatdata hstat[], struct bstatdata hpitbstat[],
@@ -97,8 +125,7 @@ void   match(int g, char *aName, char *hName,
              int spit_aab[], int spit_ah[], int spit_abb[], int spit_ahbp[], int spit_asf[],
              int sbat_hab[], int sbat_hh[], int sbat_hbb[], int sbat_hhbp[], int sbat_hsf[],
              int spit_hab[], int spit_hh[], int spit_hbb[], int spit_hhbp[], int spit_hsf[]);
-void   matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdata *lbat,
-                struct batdata apit[], struct batdata hpit[], struct batdata *lpit);
+void   matchset(int n, struct team_data team[], struct league_data league[]);
 void   readvals(struct batdata *dataP);
 
 /*
@@ -593,6 +620,9 @@ void defaultprob(int p[]) {
 
 int log5calc(double b, double bl, double p, double pl) {
    double p0, pl0 = (bl + pl) / 2;
+#if DEBUG
+   printf("b:%f, bl:%f, p:%f, pl:%f, pl0:%f\n", b, bl, p, pl, pl0);
+#endif
    if (b == 0 && p == 0) {
       p0 = 0;
    }
@@ -608,12 +638,16 @@ int log5calc(double b, double bl, double p, double pl) {
    return p0 * 1000;
 }
 
-void setprob(int p[], struct batdata *bat, struct batdata *lbat,
-             struct batdata pit[], int pitIdx, struct batdata *lpit)
+void setprob(int p[], struct team_data team[], struct league_data league[],
+             int aTeamIdx, int aLeagueIdx, int batIdx,
+             int bTeamIdx, int bLeagueIdx, int pitIdx)
 {
    int t = 0;
    int p0[10], p_hr;
-   struct batdata *pitP = &pit[pitIdx];
+   struct batdata *bat = &(team[aTeamIdx].bat[batIdx]);
+   struct batdata *pitP = &(team[bTeamIdx].pit[pitIdx]);
+   struct batdata *lbat = &(league[aLeagueIdx].bat);
+   struct batdata *lpit = &(league[bLeagueIdx].pit);
 
    p0[0] = 0;
    p0[1] = log5calc((double)bat->t/bat->pa, (double)lbat->t/lbat->pa, (double)pitP->t/pitP->pa, (double)lpit->t/lpit->pa);
@@ -661,17 +695,21 @@ void setprob(int p[], struct batdata *bat, struct batdata *lbat,
    p[11] = t;
 }
 
-void initrand(int p[], int n, struct batdata *bat, struct batdata *lbat,
-              struct batdata pit[], int pitIdx, struct batdata *lpit)
+void initrand(int p[], int n,
+              struct team_data team[], struct league_data league[],
+              int aTeamIdx, int aLeagueIdx, int batIdx,
+              int bTeamIdx, int bLeagueIdx, int pitIdx)
 {
 #if DEBUG
    int i;
 #endif
-   if (bat == NULL) {
+   if (team == NULL) {
       defaultprob(p);
    }
    else {
-      setprob(p, bat, lbat, pit, pitIdx, lpit);
+      setprob(p, team, league,
+              aTeamIdx, aLeagueIdx, batIdx,
+              bTeamIdx, bLeagueIdx, pitIdx);
    }
 
 #if DEBUG
@@ -1222,9 +1260,9 @@ void boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[
       "TOT", pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, gavg, savg, ip, ip_f, w, l, era);
 }
 
-void match(int g, char *aName, char *hName, struct batdata abat[],
-           struct batdata hbat[], struct batdata *lbat,
-           struct batdata apit[], struct batdata hpit[], struct batdata *lpit,
+void match(int g, char *aName, char *hName,
+           struct team_data team[], struct league_data league[],
+           int aTeamIdx, int aLeagueIdx, int hTeamIdx, int hLeagueIdx,
            struct bstatdata abatstat[], struct bstatdata apitbstat[],
            struct pstatdata apitpstat[],
            struct bstatdata hbatstat[], struct bstatdata hpitbstat[],
@@ -1247,13 +1285,17 @@ void match(int g, char *aName, char *hName, struct batdata abat[],
 
    initmem(c, &ahiP, &ariP, &hhiP, &hriP);
    for (i=0; i<NUM_BATTERS; i++) {
-      if (abat) {
-         initrand(ap[i].p, n, &abat[i], lbat, hpit, pitIdx, lpit);
-         initrand(hp[i].p, n, &hbat[i], lbat, apit, pitIdx, lpit);
+      if (team) {
+         initrand(ap[i].p, n, team, league,
+                  aTeamIdx, aLeagueIdx, i,
+                  hTeamIdx, hLeagueIdx, pitIdx);
+         initrand(hp[i].p, n, team, league,
+                  hTeamIdx, hLeagueIdx, i,
+                  aTeamIdx, aLeagueIdx, pitIdx);
       }
       else {
-         initrand(ap[i].p, n, NULL, NULL, NULL, 0, NULL);
-         initrand(hp[i].p, n, NULL, NULL, NULL, 0, NULL);
+         initrand(ap[i].p, n, NULL, NULL, 0, 0, 0, 0, 0, 0);
+         initrand(hp[i].p, n, NULL, NULL, 0, 0, 0, 0, 0, 0);
       }
    }
 
@@ -1350,8 +1392,7 @@ void addpstat(struct pstatdata g_stat[], struct pstatdata s_stat[], int n) {
       s_stat[i].l += g_stat[i].l;
    }
 }
-void matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdata *lbat,
-              struct batdata apit[], struct batdata hpit[], struct batdata *lpit)
+void matchset(int n, struct team_data team[], struct league_data league[])
 {
    struct bstatdata s_abatstat[NUM_BATTERS] = { 0 };
    struct bstatdata s_hbatstat[NUM_BATTERS] = { 0 };
@@ -1422,7 +1463,8 @@ void matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdat
       }
 
       if (i%2 == 0) {
-         match(i, "Blue", "Red", abat, hbat, lbat, apit, hpit, lpit,
+         match(i, "Blue", "Red",
+               team, league, 0, 0, 1, 0,
                g_abatstat, g_apitbstat, g_apitpstat,
                g_hbatstat, g_hpitbstat, g_hpitpstat, &aw, &hw,
                sbat_aab, sbat_ah, sbat_abb, sbat_ahbp, sbat_asf,
@@ -1437,7 +1479,8 @@ void matchset(int n, struct batdata abat[], struct batdata hbat[], struct batdat
          addpstat(g_hpitpstat, s_hpitpstat, NUM_PITCHERS);
       }
       else {
-         match(i, "Red", "Blue", hbat, abat, lbat, hpit, apit, lpit,
+         match(i, "Red", "Blue",
+               team, league, 1, 0, 0, 0,
                g_hbatstat, g_hpitbstat, g_hpitpstat,
                g_abatstat, g_apitbstat, g_apitpstat, &hw, &aw,
                sbat_hab, sbat_hh, sbat_hbb, sbat_hhbp, sbat_hsf,
@@ -1504,46 +1547,40 @@ int main(int argc, char *argv[]) {
          initialize(v);
          if (argc > 2) {
 #if !defined(USE_DICE)
-            int i;
-            struct batdata abat[NUM_BATTERS];
-            struct batdata hbat[NUM_BATTERS];
-            struct batdata lbat;
-            struct batdata apit[NUM_PITCHERS];
-            struct batdata hpit[NUM_PITCHERS];
-            struct batdata lpit;
+            int i, j;
+            struct team_data   team[NUM_TEAMS];
+            struct league_data league[NUM_LEAGUES];
 
-            for (i=0; i<NUM_BATTERS; i++) {
-               readvals(&abat[i]);
+            for (j=0; j<NUM_TEAMS; j++) {
+               for (i=0; i<NUM_BATTERS; i++) {
+                  readvals(&(team[j].bat[i]));
+               }
             }
-            for (i=0; i<NUM_BATTERS; i++) {
-               readvals(&hbat[i]);
+            readvals(&(league[0].bat));
+            for (j=0; j<NUM_TEAMS; j++) {
+               for (i=0; i<NUM_PITCHERS; i++) {
+                  readvals(&(team[j].pit[i]));
+               }
             }
-            readvals(&lbat);
-            for (i=0; i<NUM_PITCHERS; i++) {
-               readvals(&apit[i]);
-            }
-            for (i=0; i<NUM_PITCHERS; i++) {
-               readvals(&hpit[i]);
-            }
-            readvals(&lpit);
+            readvals(&(league[0].pit));
 
             printf("using input values to build probability tables\n");
-            matchset(162, abat, hbat, &lbat, apit, hpit, &lpit);
+            matchset(162, team, league);
 #else
             printf("using dice to build probability tables\n");
-            matchset(162, NULL, NULL, NULL, NULL, NULL, NULL);
+            matchset(162, NULL, NULL);
 #endif
          }
          else {
             printf("using dice to build probability tables\n");
-            matchset(162, NULL, NULL, NULL, NULL, NULL, NULL);
+            matchset(162, NULL, NULL);
          }
       }
    }
    else {
       initialize(-1);
       printf("using dice to build probability tables\n");
-      matchset(162, NULL, NULL, NULL, NULL, NULL, NULL);
+      matchset(162, NULL, NULL);
    }
 
    exit(0);
