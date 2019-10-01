@@ -642,8 +642,9 @@ void setprob(int p[], struct team_data team[], struct league_data league[],
              int aTeamIdx, int aLeagueIdx, int batIdx,
              int bTeamIdx, int bLeagueIdx, int pitIdx)
 {
-   int t = 0;
-   int p0[10], p_hr;
+   int t = 0, adji;
+   double adj;
+   int p0[10], p_hr, out;
    struct batdata *bat = &(team[aTeamIdx].bat[batIdx]);
    struct batdata *pitP = &(team[bTeamIdx].pit[pitIdx]);
    struct batdata *lbat = &(league[aLeagueIdx].bat);
@@ -656,6 +657,11 @@ void setprob(int p[], struct team_data team[], struct league_data league[],
    t += p0[2];
    p0[3] = log5calc((double)bat->bb/bat->pa, (double)lbat->bb/lbat->pa, (double)pitP->bb/pitP->pa, (double)lpit->bb/lpit->pa);
    t += p0[3];
+   out = log5calc((double)bat->out/bat->pa, (double)lbat->out/lbat->pa, (double)pitP->out/pitP->pa, (double)lpit->out/lpit->pa);
+   p0[4] = out/2;
+   t += p0[4];
+   p0[5] = out/2;
+   t += p0[5];
    p0[6] = log5calc((double)bat->s/bat->pa, (double)lbat->s/lbat->pa, (double)pitP->s/pitP->pa, (double)lpit->s/lpit->pa);
    t += p0[6];
    p0[7] = log5calc((double)bat->so/bat->pa, (double)lbat->so/lbat->pa, (double)pitP->so/pitP->pa, (double)lpit->so/lpit->pa);
@@ -665,10 +671,63 @@ void setprob(int p[], struct team_data team[], struct league_data league[],
    t += p0[9];
    p_hr = log5calc((double)bat->hr/bat->pa, (double)lbat->hr/lbat->pa, (double)pitP->hr/pitP->pa, (double)lpit->hr/lpit->pa);
    t += p_hr;
-   p0[4] = (1000 - t)/2;
+
+   adj = (double) t / 1000;
+
+#if DEBUG
+   printf("before: p0[0]:%3d p0[1]:%3d p0[2]:%3d p0[3]:%3d p0[4]:%3d p0[5]:%3d "
+          "p0[6]:%3d p0[7]:%3d p0[8]:%3d p0[9]:%3d p_hr:%3d t:%4d adj:%4.3f out:%3d out/2:%3d\n",
+     p0[0], p0[1], p0[2], p0[3], p0[4], p0[5],
+     p0[6], p0[7], p0[8], p0[9], p_hr, t, adj, out, out/2);
+#endif
+
+   t = 0;
+
+   p0[0] = 0;
+   t += p0[0];
+   p0[1] = myround((double) p0[1] / adj);
+   t += p0[1];
+   p0[2] = myround((double) p0[2] / adj);
+   t += p0[2];
+   p0[3] = myround((double) p0[3] / adj);
+   t += p0[3];
+   p0[4] = myround((double) p0[4] / adj);
    t += p0[4];
-   p0[5] = 1000 - t;
+   p0[5] = myround((double) p0[5] / adj);
    t += p0[5];
+   p0[6] = myround((double) p0[6] / adj);
+   t += p0[6];
+   p0[7] = myround((double) p0[7] / adj);
+   t += p0[7];
+   p0[8] = p0[7];
+   p0[9] = myround((double) p0[9] / adj);
+   t += p0[9];
+   p_hr  = myround((double) p_hr  / adj);
+   t += p_hr;
+   out   = myround((double) out   / adj);
+
+#if DEBUG
+   printf("after0: p0[0]:%3d p0[1]:%3d p0[2]:%3d p0[3]:%3d p0[4]:%3d p0[5]:%3d "
+          "p0[6]:%3d p0[7]:%3d p0[8]:%3d p0[9]:%3d p_hr:%3d t:%4d, out:%3d out/2:%3d\n",
+     p0[0], p0[1], p0[2], p0[3], p0[4], p0[5],
+     p0[6], p0[7], p0[8], p0[9], p_hr, t, out, out/2);
+#endif
+
+   adji = 1000-t;
+   if (adji != 0) {
+      out += adji;
+      p0[4] += adji / 2;
+      p0[5] += adji / 2;
+      p0[5] += adji % 2;
+   }
+   t += adji;
+
+#if DEBUG
+   printf("after1: p0[0]:%3d p0[1]:%3d p0[2]:%3d p0[3]:%3d p0[4]:%3d p0[5]:%3d "
+          "p0[6]:%3d p0[7]:%3d p0[8]:%3d p0[9]:%3d p_hr:%3d t:%4d, out:%3d out/2:%3d\n",
+     p0[0], p0[1], p0[2], p0[3], p0[4], p0[5],
+     p0[6], p0[7], p0[8], p0[9], p_hr, t, out, out/2);
+#endif
 
    t = 0;
    p[0] = p0[0];
@@ -1292,6 +1351,9 @@ void match(int g, char *aName, char *hName,
          initrand(hp[i].p, n, team, league,
                   hTeamIdx, hLeagueIdx, i,
                   aTeamIdx, aLeagueIdx, pitIdx);
+#if DEBUG
+         printf("\n");
+#endif
       }
       else {
          initrand(ap[i].p, n, NULL, NULL, 0, 0, 0, 0, 0, 0);
