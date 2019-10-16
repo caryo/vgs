@@ -90,16 +90,20 @@ void   stat(struct bstatdata stats[], int idx, int result, int gdp, int rbi, int
 int    roll(void);
 long   myround(double x);
 void   defaultprob(int p[]);
-void   setprob(int p[], struct team_data team[], struct league_data league[],
+void   setprob(
+               struct team_data team[], struct league_data league[],
                int aTeamIdx, int aLeagueIdx, int batIdx,
                int bTeamIdx, int bLeagueIdx, int pitIdx);
-void   initrand(int p[], int n,
+void   initrand(
                 struct team_data team[], struct league_data league[],
                 int aTeamIdx, int aLeagueIdx, int batIdx,
                 int bTeamIdx, int bLeagueIdx, int pitIdx);
 int    maprand(int p[], int n, int z0);
 int    genrand(int p[], int n);
-void   side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
+void   side(
+            struct probdata p[],
+            int n,
+            int i, int b, int d, int *r, int *h, int *li,
             int li_base, struct bstatdata batstat[], struct bstatdata pitbstat[],
             struct pstatdata pitpstat[], int pitIdx, int *lob);
 void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
@@ -109,8 +113,7 @@ void   linescore(int i, char *aName, char *hName, int ahiP[], int ariP[],
                  int hriP[], int hr, int hlo, int g, int *awP, int *hwP);
 void   boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[],
                 struct pstatdata pitpstat[],
-                int sbat_ab[], int sbat_h[], int sbat_bb[], int sbat_hbp[], int sbat_sf[],
-                int spit_ab[], int spit_h[], int spit_bb[], int spit_hbp[], int spit_sf[]);
+                struct team_data team[], int teamIdx);
 void   addstat(struct bstatdata g_stat[], struct bstatdata s_stat[], int n);
 void   addpstat(struct pstatdata g_stat[], struct pstatdata s_stat[], int n);
 void   match(int g, char *aName, char *hName,
@@ -120,11 +123,7 @@ void   match(int g, char *aName, char *hName,
              struct pstatdata apitpstat[],
              struct bstatdata hstat[], struct bstatdata hpitbstat[],
              struct pstatdata hpitpstat[],
-             int *awP, int *hwP,
-             int sbat_aab[], int sbat_ah[], int sbat_abb[], int sbat_ahbp[], int sbat_asf[],
-             int spit_aab[], int spit_ah[], int spit_abb[], int spit_ahbp[], int spit_asf[],
-             int sbat_hab[], int sbat_hh[], int sbat_hbb[], int sbat_hhbp[], int sbat_hsf[],
-             int spit_hab[], int spit_hh[], int spit_hbb[], int spit_hhbp[], int spit_hsf[]);
+             int *awP, int *hwP);
 void   matchset(int n, struct team_data team[], struct league_data league[]);
 void   readvals(struct batdata *dataP);
 
@@ -638,7 +637,8 @@ int log5calc(double b, double bl, double p, double pl) {
    return p0 * 1000;
 }
 
-void setprob(int p[], struct team_data team[], struct league_data league[],
+void setprob(
+             struct team_data team[], struct league_data league[],
              int aTeamIdx, int aLeagueIdx, int batIdx,
              int bTeamIdx, int bLeagueIdx, int pitIdx)
 {
@@ -649,6 +649,7 @@ void setprob(int p[], struct team_data team[], struct league_data league[],
    struct batdata *pitP = &(team[bTeamIdx].pit[pitIdx]);
    struct batdata *lbat = &(league[aLeagueIdx].bat);
    struct batdata *lpit = &(league[bLeagueIdx].pit);
+   int            *p = team[aTeamIdx].batp[batIdx].p;
 
    p0[0] = 0;
    p0[1] = log5calc((double)bat->t/bat->pa, (double)lbat->t/lbat->pa, (double)pitP->t/pitP->pa, (double)lpit->t/lpit->pa);
@@ -754,7 +755,7 @@ void setprob(int p[], struct team_data team[], struct league_data league[],
    p[11] = t;
 }
 
-void initrand(int p[], int n,
+void initrand(
               struct team_data team[], struct league_data league[],
               int aTeamIdx, int aLeagueIdx, int batIdx,
               int bTeamIdx, int bLeagueIdx, int pitIdx)
@@ -763,10 +764,10 @@ void initrand(int p[], int n,
    int i;
 #endif
    if (team == NULL) {
-      defaultprob(p);
    }
    else {
-      setprob(p, team, league,
+      setprob(
+              team, league,
               aTeamIdx, aLeagueIdx, batIdx,
               bTeamIdx, bLeagueIdx, pitIdx);
    }
@@ -890,7 +891,10 @@ void stat(struct bstatdata stats[], int idx, int result, int gdp, int rbi, int l
    }
 }
 
-void side(struct probdata p[], int n, int i, int b, int d, int *r, int *h, int *li,
+void side(
+          struct probdata p[],
+          int n,
+          int i, int b, int d, int *r, int *h, int *li,
           int li_base, struct bstatdata batstat[], struct bstatdata pitbstat[],
           struct pstatdata pitpstat[], int pitIdx, int *lob)
 {
@@ -1077,8 +1081,7 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
 
 void boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[],
               struct pstatdata pitpstat[],
-              int sbat_ab[], int sbat_h[], int sbat_bb[], int sbat_hbp[], int sbat_sf[],
-              int spit_ab[], int spit_h[], int spit_bb[], int spit_hbp[], int spit_sf[])
+              struct team_data team[], int teamIdx)
 {
    int i;
    int pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, hbp, sf;
@@ -1099,12 +1102,13 @@ void boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[
       else {
          gavg = 0.;
       }
-      if (sbat_ab) {
-         ab0 = sbat_ab[i];
-         h0 = sbat_h[i];
-         bb0 = sbat_bb[i];
-         hbp0 = sbat_hbp[i];
-         sf0 = sbat_sf[i];
+      if (team)
+      {
+         ab0 = team[teamIdx].b_stat[i].ab;
+         h0 = team[teamIdx].b_stat[i].h;
+         bb0 = team[teamIdx].b_stat[i].bb;
+         hbp0 = team[teamIdx].b_stat[i].hbp;
+         sf0 = team[teamIdx].b_stat[i].sf;
          t_ab0 += ab0;
          t_h0 += h0;
          t_bb0 += bb0;
@@ -1212,12 +1216,13 @@ void boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[
       else {
          gavg = 0.;
       }
-      if (spit_ab) {
-         ab0 = spit_ab[i];
-         h0 = spit_h[i];
-         bb0 = spit_bb[i];
-         hbp0 = spit_hbp[i];
-         sf0 = spit_sf[i];
+      if (team)
+      {
+         ab0 = team[teamIdx].p_bstat[i].ab;
+         h0 = team[teamIdx].p_bstat[i].h;
+         bb0 = team[teamIdx].p_bstat[i].bb;
+         hbp0 = team[teamIdx].p_bstat[i].hbp;
+         sf0 = team[teamIdx].p_bstat[i].sf;
          t_ab0 += ab0;
          t_h0 += h0;
          t_bb0 += bb0;
@@ -1280,7 +1285,6 @@ void boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[
       ip_f += pitpstat[i].ip_f;
       ip += ip_f / 3;
       ip_f = ip_f % 3;
-
    }
 
    if (ab > 0) {
@@ -1326,29 +1330,29 @@ void match(int g, char *aName, char *hName,
            struct pstatdata apitpstat[],
            struct bstatdata hbatstat[], struct bstatdata hpitbstat[],
            struct pstatdata hpitpstat[],
-           int *awP, int *hwP,
-           int sbat_aab[], int sbat_ah[], int sbat_abb[], int sbat_ahbp[], int sbat_asf[],
-           int spit_aab[], int spit_ah[], int spit_abb[], int spit_ahbp[], int spit_asf[],
-           int sbat_hab[], int sbat_hh[], int sbat_hbb[], int sbat_hhbp[], int sbat_hsf[],
-           int spit_hab[], int spit_hh[], int spit_hbb[], int spit_hhbp[], int spit_hsf[])
+           int *awP, int *hwP)
 {
    int i = 0;
    int ar = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
    int hr = 0, hlo = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
-   struct probdata ap[NUM_BATTERS];
-   struct probdata hp[NUM_BATTERS];
-   int n = sizeof(ap[0].p)/sizeof(int);
+   struct probdata dfltp[NUM_BATTERS];
+   struct probdata *probP;
+   int n = sizeof(dfltp[0].p)/sizeof(int);
    int c = 2;
    int alob = 0, hlob = 0;
    int pitIdx = g % 6;
 
    initmem(c, &ahiP, &ariP, &hhiP, &hriP);
    for (i=0; i<NUM_BATTERS; i++) {
-      if (team) {
-         initrand(ap[i].p, n, team, league,
+      if ((team[aTeamIdx].bat[i].ab > 0 && team[hTeamIdx].pit[i].ab > 0) &&
+          (team[hTeamIdx].bat[i].ab > 0 && team[aTeamIdx].pit[i].ab > 0))
+      {
+         initrand(
+                  team, league,
                   aTeamIdx, aLeagueIdx, i,
                   hTeamIdx, hLeagueIdx, pitIdx);
-         initrand(hp[i].p, n, team, league,
+         initrand(
+                  team, league,
                   hTeamIdx, hLeagueIdx, i,
                   aTeamIdx, aLeagueIdx, pitIdx);
 #if DEBUG
@@ -1356,10 +1360,11 @@ void match(int g, char *aName, char *hName,
 #endif
       }
       else {
-         initrand(ap[i].p, n, NULL, NULL, 0, 0, 0, 0, 0, 0);
-         initrand(hp[i].p, n, NULL, NULL, 0, 0, 0, 0, 0, 0);
+         defaultprob(dfltp[i].p);
       }
    }
+
+   probP = dfltp;
 
    i = 0;
    do {
@@ -1371,7 +1376,13 @@ void match(int g, char *aName, char *hName,
          clearmem(idx,extra,ahiP,ariP,hhiP,hriP);
       }
 
-      side(ap, n, i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, abatstat, hpitbstat, hpitpstat, pitIdx, &alob);
+      if (team) {
+         probP = team[aTeamIdx].batp;
+      }
+      side(
+           probP,
+           n,
+           i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, abatstat, hpitbstat, hpitpstat, pitIdx, &alob);
       printf("i:%d, ariP[i]:%d, ahiP[i]:%d, alob:%d\n", i, ariP[i], ahiP[i], alob);
       alo = alo + alob;
       ar = ar + ariP[i];
@@ -1381,7 +1392,13 @@ void match(int g, char *aName, char *hName,
       }
       printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
 
-      side(hp, n, i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hbatstat, apitbstat, apitpstat, pitIdx, &hlob);
+      if (team) {
+         probP = team[hTeamIdx].batp;
+      }
+      side(
+           probP,
+           n,
+           i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hbatstat, apitbstat, apitpstat, pitIdx, &hlob);
       printf("i:%d, hriP[i]:%d, hhiP[i]:%d, hlob:%d\n", i, hriP[i], hhiP[i], hlob);
       hlo = hlo + hlob;
       hr = hr + hriP[i];
@@ -1411,10 +1428,8 @@ void match(int g, char *aName, char *hName,
 
    printf("Game: %d\n", g+1);
    linescore(i,aName,hName,ahiP,ariP,ar,alo,hhiP,hriP,hr,hlo,g,awP,hwP);
-   boxscore(aName,abatstat,apitbstat,apitpstat,sbat_aab,sbat_ah,sbat_abb,sbat_ahbp,sbat_asf,
-            spit_aab,spit_ah,spit_abb,spit_ahbp,spit_asf);
-   boxscore(hName,hbatstat,hpitbstat,hpitpstat,sbat_hab,sbat_hh,sbat_hbb,sbat_hhbp,sbat_hsf,
-            spit_hab,spit_hh,spit_hbb,spit_hhbp,spit_hsf);
+   boxscore(aName,abatstat,apitbstat,apitpstat,team,aTeamIdx);
+   boxscore(hName,hbatstat,hpitbstat,hpitpstat,team,hTeamIdx);
    free(ahiP);
    free(ariP);
    free(hhiP);
@@ -1456,39 +1471,15 @@ void addpstat(struct pstatdata g_stat[], struct pstatdata s_stat[], int n) {
 }
 void matchset(int n, struct team_data team[], struct league_data league[])
 {
-   struct bstatdata s_abatstat[NUM_BATTERS] = { 0 };
-   struct bstatdata s_hbatstat[NUM_BATTERS] = { 0 };
    struct bstatdata g_abatstat[NUM_BATTERS] = { 0 };
    struct bstatdata g_hbatstat[NUM_BATTERS] = { 0 };
-   struct bstatdata s_apitbstat[NUM_PITCHERS] = { 0 };
-   struct bstatdata s_hpitbstat[NUM_PITCHERS] = { 0 };
    struct bstatdata g_apitbstat[NUM_PITCHERS] = { 0 };
    struct bstatdata g_hpitbstat[NUM_PITCHERS] = { 0 };
-   struct pstatdata s_apitpstat[NUM_PITCHERS] = { 0 };
-   struct pstatdata s_hpitpstat[NUM_PITCHERS] = { 0 };
    struct pstatdata g_apitpstat[NUM_PITCHERS] = { 0 };
    struct pstatdata g_hpitpstat[NUM_PITCHERS] = { 0 };
-   int sbat_aab[NUM_BATTERS] = { 0 };
-   int sbat_ah[NUM_BATTERS] = { 0 };
-   int sbat_abb[NUM_BATTERS] = { 0 };
-   int sbat_ahbp[NUM_BATTERS] = { 0 };
-   int sbat_asf[NUM_BATTERS] = { 0 };
-   int sbat_hab[NUM_BATTERS] = { 0 };
-   int sbat_hh[NUM_BATTERS] = { 0 };
-   int sbat_hbb[NUM_BATTERS] = { 0 };
-   int sbat_hhbp[NUM_BATTERS] = { 0 };
-   int sbat_hsf[NUM_BATTERS] = { 0 };
-   int spit_aab[NUM_PITCHERS] = { 0 };
-   int spit_ah[NUM_PITCHERS] = { 0 };
-   int spit_abb[NUM_PITCHERS] = { 0 };
-   int spit_ahbp[NUM_PITCHERS] = { 0 };
-   int spit_asf[NUM_PITCHERS] = { 0 };
-   int spit_hab[NUM_PITCHERS] = { 0 };
-   int spit_hh[NUM_PITCHERS] = { 0 };
-   int spit_hbb[NUM_PITCHERS] = { 0 };
-   int spit_hhbp[NUM_PITCHERS] = { 0 };
-   int spit_hsf[NUM_PITCHERS] = { 0 };
-   int i, j, aw = 0, hw = 0;
+   int i, aw = 0, hw = 0;
+   int aTeamIdx, hTeamIdx;
+   int aLeagueIdx, hLeagueIdx;
 
    for (i=0; i<n; i++) {
       memset(g_abatstat,0,sizeof(struct bstatdata)*NUM_BATTERS);
@@ -1499,69 +1490,44 @@ void matchset(int n, struct team_data team[], struct league_data league[])
       memset(g_hpitbstat,0,sizeof(struct bstatdata)*NUM_PITCHERS);
       memset(g_hpitpstat,0,sizeof(struct pstatdata)*NUM_PITCHERS);
 
-      for (j=0; j<NUM_BATTERS; j++) {
-         sbat_aab[j]  = s_abatstat[j].ab;
-         sbat_ah[j]   = s_abatstat[j].h;
-         sbat_abb[j]  = s_abatstat[j].bb;
-         sbat_ahbp[j] = s_abatstat[j].hbp;
-         sbat_asf[j]  = s_abatstat[j].sf;
-         sbat_hab[j]  = s_hbatstat[j].ab;
-         sbat_hh[j]   = s_hbatstat[j].h;
-         sbat_hbb[j]  = s_hbatstat[j].bb;
-         sbat_hhbp[j] = s_hbatstat[j].hbp;
-         sbat_hsf[j]  = s_hbatstat[j].sf;
-      }
-      for (j=0; j<NUM_PITCHERS; j++) {
-         spit_aab[j]  = s_apitbstat[j].ab;
-         spit_ah[j]   = s_apitbstat[j].h;
-         spit_abb[j]  = s_apitbstat[j].bb;
-         spit_ahbp[j] = s_apitbstat[j].hbp;
-         spit_asf[j]  = s_apitbstat[j].sf;
-         spit_hab[j]  = s_hpitbstat[j].ab;
-         spit_hh[j]   = s_hpitbstat[j].h;
-         spit_hbb[j]  = s_hpitbstat[j].bb;
-         spit_hhbp[j] = s_hpitbstat[j].hbp;
-         spit_hsf[j]  = s_hpitbstat[j].sf;
-      }
-
       if (i%2 == 0) {
+         aTeamIdx = 0;
+         aLeagueIdx = 0;
+         hTeamIdx = 1;
+         hLeagueIdx = 0;
          match(i, "Blue", "Red",
-               team, league, 0, 0, 1, 0,
+               team, league, aTeamIdx, aLeagueIdx,
+               hTeamIdx, hLeagueIdx,
                g_abatstat, g_apitbstat, g_apitpstat,
-               g_hbatstat, g_hpitbstat, g_hpitpstat, &aw, &hw,
-               sbat_aab, sbat_ah, sbat_abb, sbat_ahbp, sbat_asf,
-               spit_aab, spit_ah, spit_abb, spit_ahbp, spit_asf,
-               sbat_hab, sbat_hh, sbat_hbb, sbat_hhbp, sbat_hsf,
-               spit_hab, spit_hh, spit_hbb, spit_hhbp, spit_hsf);
-         addstat(g_abatstat, s_abatstat, NUM_BATTERS);
-         addstat(g_apitbstat, s_apitbstat, NUM_PITCHERS);
-         addpstat(g_apitpstat, s_apitpstat, NUM_PITCHERS);
-         addstat(g_hbatstat, s_hbatstat, NUM_BATTERS);
-         addstat(g_hpitbstat, s_hpitbstat, NUM_PITCHERS);
-         addpstat(g_hpitpstat, s_hpitpstat, NUM_PITCHERS);
+               g_hbatstat, g_hpitbstat, g_hpitpstat, &aw, &hw);
+         addstat(g_abatstat, team[aTeamIdx].b_stat, NUM_BATTERS);
+         addstat(g_apitbstat, team[aTeamIdx].p_bstat, NUM_PITCHERS);
+         addpstat(g_apitpstat, team[aTeamIdx].p_pstat, NUM_PITCHERS);
+         addstat(g_hbatstat, team[hTeamIdx].b_stat, NUM_BATTERS);
+         addstat(g_hpitbstat, team[hTeamIdx].p_bstat, NUM_PITCHERS);
+         addpstat(g_hpitpstat, team[hTeamIdx].p_pstat, NUM_PITCHERS);
       }
       else {
+         aTeamIdx = 1;
+         aLeagueIdx = 0;
+         hTeamIdx = 0;
+         hLeagueIdx = 0;
          match(i, "Red", "Blue",
-               team, league, 1, 0, 0, 0,
-               g_hbatstat, g_hpitbstat, g_hpitpstat,
-               g_abatstat, g_apitbstat, g_apitpstat, &hw, &aw,
-               sbat_hab, sbat_hh, sbat_hbb, sbat_hhbp, sbat_hsf,
-               spit_hab, spit_hh, spit_hbb, spit_hhbp, spit_hsf,
-               sbat_aab, sbat_ah, sbat_abb, sbat_ahbp, sbat_asf,
-               spit_aab, spit_ah, spit_abb, spit_ahbp, spit_asf);
-         addstat(g_hbatstat, s_hbatstat, NUM_BATTERS);
-         addstat(g_hpitbstat, s_hpitbstat, NUM_PITCHERS);
-         addpstat(g_hpitpstat, s_hpitpstat, NUM_PITCHERS);
-         addstat(g_abatstat, s_abatstat, NUM_BATTERS);
-         addstat(g_apitbstat, s_apitbstat, NUM_PITCHERS);
-         addpstat(g_apitpstat, s_apitpstat, NUM_PITCHERS);
+               team, league, aTeamIdx, aLeagueIdx,
+               hTeamIdx, hLeagueIdx,
+               g_abatstat, g_apitbstat, g_apitpstat,
+               g_hbatstat, g_hpitbstat, g_hpitpstat, &hw, &aw);
+         addstat(g_hbatstat, team[hTeamIdx].b_stat, NUM_BATTERS);
+         addstat(g_hpitbstat, team[hTeamIdx].p_bstat, NUM_PITCHERS);
+         addpstat(g_hpitpstat, team[hTeamIdx].p_pstat, NUM_PITCHERS);
+         addstat(g_abatstat, team[aTeamIdx].b_stat, NUM_BATTERS);
+         addstat(g_apitbstat, team[aTeamIdx].p_bstat, NUM_PITCHERS);
+         addpstat(g_apitpstat, team[aTeamIdx].p_pstat, NUM_PITCHERS);
       }
    }
    printf("\n");
-   boxscore("Blue",s_abatstat, s_apitbstat, s_apitpstat, NULL, NULL, NULL, NULL, NULL,
-            NULL, NULL, NULL, NULL, NULL);
-   boxscore("Red", s_hbatstat, s_hpitbstat, s_hpitpstat, NULL, NULL, NULL, NULL, NULL,
-            NULL, NULL, NULL, NULL, NULL);
+   boxscore("Blue",team[0].b_stat, team[0].p_bstat, team[0].p_pstat, NULL, 0);
+   boxscore("Red", team[1].b_stat, team[1].p_bstat, team[1].p_pstat, NULL, 0);
 }
 
 void readvals(struct batdata *dataP) {
@@ -1599,8 +1565,11 @@ void readvals(struct batdata *dataP) {
 }
 
 int main(int argc, char *argv[]) {
+   struct team_data   team[NUM_TEAMS] = { 0 };
+   struct league_data league[NUM_LEAGUES] = { 0 };
 
    if (argc > 1) {
+
       int v = atoi(argv[1]);
       if (v == -1) {
          test_advance(argc, argv);
@@ -1610,8 +1579,6 @@ int main(int argc, char *argv[]) {
          if (argc > 2) {
 #if !defined(USE_DICE)
             int i, j;
-            struct team_data   team[NUM_TEAMS];
-            struct league_data league[NUM_LEAGUES];
 
             for (j=0; j<NUM_TEAMS; j++) {
                for (i=0; i<NUM_BATTERS; i++) {
@@ -1630,19 +1597,19 @@ int main(int argc, char *argv[]) {
             matchset(162, team, league);
 #else
             printf("using dice to build probability tables\n");
-            matchset(162, NULL, NULL);
+            matchset(162, team, league);
 #endif
          }
          else {
             printf("using dice to build probability tables\n");
-            matchset(162, NULL, NULL);
+            matchset(162, team, league);
          }
       }
    }
    else {
       initialize(-1);
       printf("using dice to build probability tables\n");
-      matchset(162, NULL, NULL);
+      matchset(162, team, league);
    }
 
    exit(0);
