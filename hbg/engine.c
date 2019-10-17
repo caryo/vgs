@@ -100,9 +100,7 @@ void   initrand(
                 int bTeamIdx, int bLeagueIdx, int pitIdx);
 int    maprand(int p[], int n, int z0);
 int    genrand(int p[], int n);
-void   side(
-            struct probdata p[],
-            int n,
+void   side(struct probdata p[], int n,
             int i, int b, int d, int *r, int *h, int *li,
             int li_base, struct bstatdata batstat[], struct bstatdata pitbstat[],
             struct pstatdata pitpstat[], int pitIdx, int *lob);
@@ -760,24 +758,11 @@ void initrand(
               int aTeamIdx, int aLeagueIdx, int batIdx,
               int bTeamIdx, int bLeagueIdx, int pitIdx)
 {
-#if DEBUG
-   int i;
-#endif
-   if (team == NULL) {
-   }
-   else {
-      setprob(
-              team, league,
+   if (team) {
+      setprob(team, league,
               aTeamIdx, aLeagueIdx, batIdx,
               bTeamIdx, bLeagueIdx, pitIdx);
    }
-
-#if DEBUG
-   for (i=0; i<n; i++) {
-      printf("i:%2d, p[%d]: %4d, pitIdx:%d\n", i, i, p[i], pitIdx);
-   }
-   printf("\n");
-#endif
 }
 
 int maprand(int p[], int n, int z0) {
@@ -891,9 +876,7 @@ void stat(struct bstatdata stats[], int idx, int result, int gdp, int rbi, int l
    }
 }
 
-void side(
-          struct probdata p[],
-          int n,
+void side(struct probdata p[], int n,
           int i, int b, int d, int *r, int *h, int *li,
           int li_base, struct bstatdata batstat[], struct bstatdata pitbstat[],
           struct pstatdata pitpstat[], int pitIdx, int *lob)
@@ -1360,11 +1343,25 @@ void match(int g, char *aName, char *hName,
 #endif
       }
       else {
-         defaultprob(dfltp[i].p);
+         int j;
+         if (i==0) {
+            defaultprob(dfltp[i].p);
+#if DEBUG
+            if (g == 0) {
+               for (j=0; j<n; j++) {
+                  printf("j:%2d, dfltp[%d].p[%d]: %4d, pitIdx:%d\n", j, i, j, dfltp[i].p[j], pitIdx);
+               }
+               printf("\n");
+            }
+#endif
+         }
+         else {
+            for (j=0; j<n; j++) {
+               dfltp[i].p[j] = dfltp[0].p[j];
+            }
+         }
       }
    }
-
-   probP = dfltp;
 
    i = 0;
    do {
@@ -1376,12 +1373,14 @@ void match(int g, char *aName, char *hName,
          clearmem(idx,extra,ahiP,ariP,hhiP,hriP);
       }
 
-      if (team) {
+      probP = dfltp;
+
+      if ((team[aTeamIdx].bat[i].ab > 0 && team[hTeamIdx].pit[i].ab > 0) &&
+          (team[hTeamIdx].bat[i].ab > 0 && team[aTeamIdx].pit[i].ab > 0))
+      {
          probP = team[aTeamIdx].batp;
       }
-      side(
-           probP,
-           n,
+      side(probP, n,
            i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, abatstat, hpitbstat, hpitpstat, pitIdx, &alob);
       printf("i:%d, ariP[i]:%d, ahiP[i]:%d, alob:%d\n", i, ariP[i], ahiP[i], alob);
       alo = alo + alob;
@@ -1392,12 +1391,14 @@ void match(int g, char *aName, char *hName,
       }
       printf("end of side: top, i:%d, ar:%d, hr:%d\n", i, ar, hr);
 
-      if (team) {
+      probP = dfltp;
+
+      if ((team[aTeamIdx].bat[i].ab > 0 && team[hTeamIdx].pit[i].ab > 0) &&
+          (team[hTeamIdx].bat[i].ab > 0 && team[aTeamIdx].pit[i].ab > 0))
+      {
          probP = team[hTeamIdx].batp;
       }
-      side(
-           probP,
-           n,
+      side(probP, n,
            i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hbatstat, apitbstat, apitpstat, pitIdx, &hlob);
       printf("i:%d, hriP[i]:%d, hhiP[i]:%d, hlob:%d\n", i, hriP[i], hhiP[i], hlob);
       hlo = hlo + hlob;
@@ -1580,6 +1581,7 @@ int main(int argc, char *argv[]) {
 #if !defined(USE_DICE)
             int i, j;
 
+            fprintf(stderr,"reading values from standard input\n");
             for (j=0; j<NUM_TEAMS; j++) {
                for (i=0; i<NUM_BATTERS; i++) {
                   readvals(&(team[j].bat[i]));
