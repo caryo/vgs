@@ -1,0 +1,74 @@
+roll:
+   int z1
+   int z2
+   int z
+
+   rand()
+
+maprand:
+   int i
+
+genrand:
+   int z
+   int z0
+
+   maprand()
+   roll()
+
+   rand()
+
+onbase:
+   int j
+
+   printf()
+   assert()
+
+offbase:
+   int j
+   int rc
+
+   printf()
+
+result_code:
+   char *code
+
+result:
+   int x
+   int f
+   int w
+   int b
+   int r1
+   int r2
+
+   advance()
+   advance_x()
+   offbase()
+   onbase()
+
+   printf()
+
+statrun:
+
+stat:
+
+side:
+   int j
+   int z
+   int o
+   int a
+   int c
+   int gdp
+   int idx
+   int ob[3]
+   int rli[4]
+   int rbi
+   int rs
+   int rlo
+
+   genrand()
+   result_code()
+   result()
+   statrun()
+   stat()
+
+   printf()

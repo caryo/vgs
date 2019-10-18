@@ -39,29 +39,6 @@ match:
    alob
    hlob
 
-side:
-   j
-   z
-   o
-   a
-   c
-   gdp
-   idx
-   ob
-   rli
-   rbi
-   rs
-   rlo
-
-
-result:
-   x
-   f
-   w
-   b
-   r1
-   r2
-
 main:
    struct team_data   team[NUM_TEAMS] = { 0 };
    struct league_data league[NUM_LEAGUES] = { 0 };
