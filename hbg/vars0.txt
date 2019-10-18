@@ -1,0 +1,27 @@
+advance:
+   x
+   r
+
+advance_x:
+   r
+   q
+   i
+
+test_advance:
+   int i - iterate through tne number of arguments passed in to the program
+   int r - integer value returned from advance() or advance_x()
+   int a - integer value for the second argument passed in to the program
+   int x - integer value for the third argument passed in to the program
+   int b - integer value passed by reference to advance() or advance_x()
+   int c - integer value passed by reference to advance() or advance_x()
+   int r1 - integer value passed by reference to advance() or advance_x()
+   int r2 - integer value passed by reference to advance() or advance_x()
+   int argc - number of arguments passed in to the program
+   char *argv[] - array of string arguments passed in to the program
+
+   advance()
+   advance_x()
+
+   atoi()
+   printf()
+   exit()

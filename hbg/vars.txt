@@ -62,11 +62,21 @@ result:
    r1
    r2
 
-advance:
-   x
-   r
+main:
+   struct team_data   team[NUM_TEAMS] = { 0 };
+   struct league_data league[NUM_LEAGUES] = { 0 };
+   int v
+   int argc - number of arguments passed in to the program
+   char *argv[] - array of string arguments passed in to the program
+   int i- iterate through the number of teams NUM_TEAMS
+   int j- iterate through the number of batters NUM_BATTERS and pitchers NUM_PITCHERS
 
-advance_x:
-   r
-   q
-   i
+   test_advance()
+   initialize()
+   readvals()
+   matchset()
+
+   atoi()
+   fprintf()
+   printf()
+   exit()
