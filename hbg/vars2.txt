@@ -1,0 +1,128 @@
+myround:
+   assert()
+
+defaultprob:
+   int i
+   float p0
+   float t0
+   float t
+
+   myround()
+
+   printf()
+
+log5calc:
+   double p0
+   double pl0
+
+   printf()
+
+setprob:
+   int t
+   int adji
+   double adj
+   int p0[10]
+   int p_hr
+   int out
+   struct batdata *bat
+   struct batdata *pitP
+   struct batdata *lbat
+   struct batdata *lpit
+   int *p
+
+   log5calc()
+   myround()
+
+   printf()
+
+initrand:
+   setprob()
+
+initmem:
+   realloc()
+   malloc()
+   memset()
+
+clearmem:
+   printf()
+   memset()
+
+linescore:
+   int ah
+   int hh
+   int in
+
+   printf()
+
+boxscore:
+   int i
+   int pa
+   int ab
+   int r
+   int h
+   int rbi
+   int bb
+   int so
+   int lob
+   int s
+   int d
+   int t
+   int hr
+   int gdp
+   int hbp
+   int sf
+   int ab0
+   int h0
+   int bb0
+   int hbp0
+   int sf0
+   int t_ab0 = 0
+   int t_h0 = 0
+   int t_bb0 = 0
+   int t_hbp0 = 0
+   int t_sf0 = 0
+   double gavg = 0.
+   double savg = 0.
+   double gobp = 0.
+   double sobp = 0.
+   double era = 0.
+   double ipd
+   int w
+   int l
+   int ip
+   int ip_f
+
+   printf()
+
+match:
+   int i
+   int ar
+   int alo
+   int ali_base
+   int ali
+   int *ahiP
+   int *ariP
+   int hr
+   int hlo
+   int hli_base 
+   int hli
+   int *hhiP
+   int *hriP
+   struct probdata dfltp[NUM_BATTERS]
+   struct probdata *probP
+   int n
+   int c
+   int alob
+   int hlob
+   int pitIdx
+
+   initmem()
+   initrand()
+   defaultprob()
+   clearmem()
+   side()
+   linescore()
+   boxscore()
+
+   printf()
+   free();
