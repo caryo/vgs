@@ -11,15 +11,8 @@
 #define NUM_TEAMS    2
 #define NUM_LEAGUES  1
 
-struct game_data {
-   struct team_data   away;
-   struct team_data   home;
-   struct league_data league;
-};
-
 void   initialize(int seed);
-void   addstat(struct bstatdata g_stat[], struct bstatdata s_stat[], int n);
-void   addpstat(struct pstatdata g_stat[], struct pstatdata s_stat[], int n);
+void   addstat(struct team_data *g, struct team_data *s, int nBat, int nPit);
 void   matchset(int n, struct team_data team[], struct league_data league[]);
 void   readvals(struct batdata *dataP);
 
@@ -35,98 +28,83 @@ void initialize(int seed) {
    srand(seed);
 }
 
-void addstat(struct bstatdata g_stat[], struct bstatdata s_stat[], int n) {
-   int i;
-   for (i=0; i<n; i++) {
-      s_stat[i].pa  += g_stat[i].pa;
-      s_stat[i].ab  += g_stat[i].ab;
-      s_stat[i].r   += g_stat[i].r;
-      s_stat[i].h   += g_stat[i].h;
-      s_stat[i].rbi += g_stat[i].rbi;
-      s_stat[i].bb  += g_stat[i].bb;
-      s_stat[i].so  += g_stat[i].so;
-      s_stat[i].lob += g_stat[i].lob;
-      s_stat[i].s   += g_stat[i].s;
-      s_stat[i].d   += g_stat[i].d;
-      s_stat[i].t   += g_stat[i].t;
-      s_stat[i].hr  += g_stat[i].hr;
-      s_stat[i].gdp += g_stat[i].gdp;
-      s_stat[i].hbp += g_stat[i].hbp;
-      s_stat[i].sf  += g_stat[i].sf;
-   }
-}
-
-void addpstat(struct pstatdata g_stat[], struct pstatdata s_stat[], int n) {
+void addstat(struct team_data *g, struct team_data *s, int nBat, int nPit) {
    int i, ip_f;
-   for (i=0; i<n; i++) {
-      s_stat[i].ip += g_stat[i].ip;
-      ip_f = s_stat[i].ip_f;
-      ip_f += g_stat[i].ip_f;
-      s_stat[i].ip += ip_f / 3;
-      s_stat[i].ip_f = ip_f % 3;
-      s_stat[i].w += g_stat[i].w;
-      s_stat[i].l += g_stat[i].l;
+
+   for (i=0; i<nBat; i++) {
+      s->b_stat[i].pa  += g->b_stat[i].pa;
+      s->b_stat[i].ab  += g->b_stat[i].ab;
+      s->b_stat[i].r   += g->b_stat[i].r;
+      s->b_stat[i].h   += g->b_stat[i].h;
+      s->b_stat[i].rbi += g->b_stat[i].rbi;
+      s->b_stat[i].bb  += g->b_stat[i].bb;
+      s->b_stat[i].so  += g->b_stat[i].so;
+      s->b_stat[i].lob += g->b_stat[i].lob;
+      s->b_stat[i].s   += g->b_stat[i].s;
+      s->b_stat[i].d   += g->b_stat[i].d;
+      s->b_stat[i].t   += g->b_stat[i].t;
+      s->b_stat[i].hr  += g->b_stat[i].hr;
+      s->b_stat[i].gdp += g->b_stat[i].gdp;
+      s->b_stat[i].hbp += g->b_stat[i].hbp;
+      s->b_stat[i].sf  += g->b_stat[i].sf;
+   }
+
+   for (i=0; i<nPit; i++) {
+      s->p_bstat[i].pa  += g->p_bstat[i].pa;
+      s->p_bstat[i].ab  += g->p_bstat[i].ab;
+      s->p_bstat[i].r   += g->p_bstat[i].r;
+      s->p_bstat[i].h   += g->p_bstat[i].h;
+      s->p_bstat[i].rbi += g->p_bstat[i].rbi;
+      s->p_bstat[i].bb  += g->p_bstat[i].bb;
+      s->p_bstat[i].so  += g->p_bstat[i].so;
+      s->p_bstat[i].lob += g->p_bstat[i].lob;
+      s->p_bstat[i].s   += g->p_bstat[i].s;
+      s->p_bstat[i].d   += g->p_bstat[i].d;
+      s->p_bstat[i].t   += g->p_bstat[i].t;
+      s->p_bstat[i].hr  += g->p_bstat[i].hr;
+      s->p_bstat[i].gdp += g->p_bstat[i].gdp;
+      s->p_bstat[i].hbp += g->p_bstat[i].hbp;
+      s->p_bstat[i].sf  += g->p_bstat[i].sf;
+
+      s->p_pstat[i].ip += g->p_pstat[i].ip;
+      ip_f = s->p_pstat[i].ip_f;
+      ip_f += g->p_pstat[i].ip_f;
+      s->p_pstat[i].ip += ip_f / 3;
+      s->p_pstat[i].ip_f = ip_f % 3;
+      s->p_pstat[i].w += g->p_pstat[i].w;
+      s->p_pstat[i].l += g->p_pstat[i].l;
    }
 }
-void matchset(int n, struct team_data team[], struct league_data league[])
-{
-   struct bstatdata g_abatstat[NUM_BATTERS] = { 0 };
-   struct bstatdata g_hbatstat[NUM_BATTERS] = { 0 };
-   struct bstatdata g_apitbstat[NUM_PITCHERS] = { 0 };
-   struct bstatdata g_hpitbstat[NUM_PITCHERS] = { 0 };
-   struct pstatdata g_apitpstat[NUM_PITCHERS] = { 0 };
-   struct pstatdata g_hpitpstat[NUM_PITCHERS] = { 0 };
+
+void matchset(int n, struct team_data team[], struct league_data league[]) {
    int i, aw = 0, hw = 0;
-   int aTeamIdx, hTeamIdx;
-   int aLeagueIdx, hLeagueIdx;
+   struct game_data gamestat;
 
    for (i=0; i<n; i++) {
-      memset(g_abatstat,0,sizeof(struct bstatdata)*NUM_BATTERS);
-      memset(g_apitbstat,0,sizeof(struct bstatdata)*NUM_PITCHERS);
-      memset(g_apitpstat,0,sizeof(struct pstatdata)*NUM_PITCHERS);
-
-      memset(g_hbatstat,0,sizeof(struct bstatdata)*NUM_BATTERS);
-      memset(g_hpitbstat,0,sizeof(struct bstatdata)*NUM_PITCHERS);
-      memset(g_hpitpstat,0,sizeof(struct pstatdata)*NUM_PITCHERS);
-
       if (i%2 == 0) {
-         aTeamIdx = 0;
-         aLeagueIdx = 0;
-         hTeamIdx = 1;
-         hLeagueIdx = 0;
-         match(i, "Blue", "Red",
-               team, league, aTeamIdx, aLeagueIdx,
-               hTeamIdx, hLeagueIdx,
-               g_abatstat, g_apitbstat, g_apitpstat,
-               g_hbatstat, g_hpitbstat, g_hpitpstat, &aw, &hw);
-         addstat(g_abatstat, team[aTeamIdx].b_stat, NUM_BATTERS);
-         addstat(g_apitbstat, team[aTeamIdx].p_bstat, NUM_PITCHERS);
-         addpstat(g_apitpstat, team[aTeamIdx].p_pstat, NUM_PITCHERS);
-         addstat(g_hbatstat, team[hTeamIdx].b_stat, NUM_BATTERS);
-         addstat(g_hpitbstat, team[hTeamIdx].p_bstat, NUM_PITCHERS);
-         addpstat(g_hpitpstat, team[hTeamIdx].p_pstat, NUM_PITCHERS);
+         memset(&gamestat, 0, sizeof(struct game_data));
+         gamestat.aTeamIdx = 0;
+         gamestat.aLeagueIdx = 0;
+         gamestat.hTeamIdx = 1;
+         gamestat.hLeagueIdx = 0;
+         match(i, "Blue", "Red", team, league, &gamestat, &aw, &hw);
+         addstat(&gamestat.away, &team[0], NUM_BATTERS, NUM_PITCHERS);
+         addstat(&gamestat.home, &team[1], NUM_BATTERS, NUM_PITCHERS);
       }
       else {
-         aTeamIdx = 1;
-         aLeagueIdx = 0;
-         hTeamIdx = 0;
-         hLeagueIdx = 0;
-         match(i, "Red", "Blue",
-               team, league, aTeamIdx, aLeagueIdx,
-               hTeamIdx, hLeagueIdx,
-               g_abatstat, g_apitbstat, g_apitpstat,
-               g_hbatstat, g_hpitbstat, g_hpitpstat, &hw, &aw);
-         addstat(g_hbatstat, team[hTeamIdx].b_stat, NUM_BATTERS);
-         addstat(g_hpitbstat, team[hTeamIdx].p_bstat, NUM_PITCHERS);
-         addpstat(g_hpitpstat, team[hTeamIdx].p_pstat, NUM_PITCHERS);
-         addstat(g_abatstat, team[aTeamIdx].b_stat, NUM_BATTERS);
-         addstat(g_apitbstat, team[aTeamIdx].p_bstat, NUM_PITCHERS);
-         addpstat(g_apitpstat, team[aTeamIdx].p_pstat, NUM_PITCHERS);
+         memset(&gamestat, 0, sizeof(struct game_data));
+         gamestat.aTeamIdx = 1;
+         gamestat.aLeagueIdx = 0;
+         gamestat.hTeamIdx = 0;
+         gamestat.hLeagueIdx = 0;
+         match(i, "Red", "Blue", team, league, &gamestat, &hw, &aw);
+         addstat(&gamestat.home, &team[0], NUM_BATTERS, NUM_PITCHERS);
+         addstat(&gamestat.away, &team[1], NUM_BATTERS, NUM_PITCHERS);
       }
    }
    printf("\n");
-   boxscore("Blue",team[0].b_stat, team[0].p_bstat, team[0].p_pstat, NULL, 0);
-   boxscore("Red", team[1].b_stat, team[1].p_bstat, team[1].p_pstat, NULL, 0);
+   boxscore("Blue", &team[0], NULL, 0);
+   boxscore("Red", &team[1], NULL, 0);
 }
 
 void readvals(struct batdata *dataP) {

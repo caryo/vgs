@@ -30,6 +30,15 @@ struct team_data {
    struct pstatdata p_pstat[NUM_PITCHERS];
 };
 
+struct game_data {
+   struct team_data   away;
+   struct team_data   home;
+   int aTeamIdx;
+   int aLeagueIdx;
+   int hTeamIdx;
+   int hLeagueIdx;
+};
+
 struct league_data {
    struct batdata   bat;
    struct batdata   pit;
@@ -51,16 +60,11 @@ void   clearmem(int idx, int c, int ahiP[], int ariP[], int hhiP[], int hriP[]);
 void   linescore(int i, char *aName, char *hName, int ahiP[], int ariP[],
                  int ar, int alo, int hhiP[],
                  int hriP[], int hr, int hlo, int g, int *awP, int *hwP);
-void   boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[],
-                struct pstatdata pitpstat[],
+void   boxscore(char *name, struct team_data *game,
                 struct team_data team[], int teamIdx);
 void   match(int g, char *aName, char *hName,
              struct team_data team[], struct league_data league[],
-             int aTeamIdx, int aLeagueIdx, int hTeamIdx, int hLeagueIdx,
-             struct bstatdata abatstat[], struct bstatdata apitbstat[],
-             struct pstatdata apitpstat[],
-             struct bstatdata hstat[], struct bstatdata hpitbstat[],
-             struct pstatdata hpitpstat[],
+             struct game_data *game,
              int *awP, int *hwP);
 
 #endif

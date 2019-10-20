@@ -278,8 +278,7 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
    printf("%5d %2d %2d %5d\n", hr, hh, 0, hlo);
 }
 
-void boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[],
-              struct pstatdata pitpstat[],
+void boxscore(char *name, struct team_data *game,
               struct team_data team[], int teamIdx)
 {
    int i;
@@ -295,6 +294,7 @@ void boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[
      "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR",
      "GDP", "AVG", "SAVG", "OBP", "SOBP");
    for(i=0; i<NUM_BATTERS; i++) {
+      struct bstatdata *batstat = game->b_stat;
       if (batstat[i].ab > 0) {
          gavg = (double) batstat[i].h / batstat[i].ab;
       }
@@ -409,6 +409,8 @@ void boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[
      "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR", "GDP",
      "AVG", "SAVG", "IP", "W-L", "ERA");
    for (i=0; i<NUM_PITCHERS; i++) {
+      struct bstatdata *pitbstat = game->p_bstat;
+      struct pstatdata *pitpstat = game->p_pstat;
       if (pitbstat[i].ab > 0) {
          gavg = (double) pitbstat[i].h / pitbstat[i].ab;
       }
@@ -524,12 +526,7 @@ void boxscore(char *name, struct bstatdata batstat[], struct bstatdata pitbstat[
 
 void match(int g, char *aName, char *hName,
            struct team_data team[], struct league_data league[],
-           int aTeamIdx, int aLeagueIdx, int hTeamIdx, int hLeagueIdx,
-           struct bstatdata abatstat[], struct bstatdata apitbstat[],
-           struct pstatdata apitpstat[],
-           struct bstatdata hbatstat[], struct bstatdata hpitbstat[],
-           struct pstatdata hpitpstat[],
-           int *awP, int *hwP)
+           struct game_data *game, int *awP, int *hwP)
 {
    int i = 0;
    int ar = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
@@ -540,6 +537,13 @@ void match(int g, char *aName, char *hName,
    int c = 2;
    int alob = 0, hlob = 0;
    int pitIdx = g % 6;
+   int aTeamIdx, hTeamIdx;
+   int aLeagueIdx, hLeagueIdx;
+
+   aTeamIdx = game->aTeamIdx;
+   aLeagueIdx = game->aLeagueIdx;
+   hTeamIdx = game->hTeamIdx;
+   hLeagueIdx = game->hLeagueIdx;
 
    initmem(c, &ahiP, &ariP, &hhiP, &hriP);
    for (i=0; i<NUM_BATTERS; i++) {
@@ -597,7 +601,8 @@ void match(int g, char *aName, char *hName,
          probP = team[aTeamIdx].batp;
       }
       side(probP, n,
-           i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, abatstat, hpitbstat, hpitpstat, pitIdx, &alob);
+           i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, game->away.b_stat,
+           game->home.p_bstat, game->home.p_pstat, pitIdx, &alob);
       printf("i:%d, ariP[i]:%d, ahiP[i]:%d, alob:%d\n", i, ariP[i], ahiP[i], alob);
       alo = alo + alob;
       ar = ar + ariP[i];
@@ -615,7 +620,8 @@ void match(int g, char *aName, char *hName,
          probP = team[hTeamIdx].batp;
       }
       side(probP, n,
-           i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, hbatstat, apitbstat, apitpstat, pitIdx, &hlob);
+           i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, game->home.b_stat,
+           game->away.p_bstat, game->away.p_pstat, pitIdx, &hlob);
       printf("i:%d, hriP[i]:%d, hhiP[i]:%d, hlob:%d\n", i, hriP[i], hhiP[i], hlob);
       hlo = hlo + hlob;
       hr = hr + hriP[i];
@@ -635,18 +641,19 @@ void match(int g, char *aName, char *hName,
    while (1);
 
    if (ar > hr) {
-      apitpstat[pitIdx].w++;
-      hpitpstat[pitIdx].l++;
+      game->away.p_pstat[pitIdx].w++;
+      game->home.p_pstat[pitIdx].l++;
    }
    else {
-      hpitpstat[pitIdx].w++;
-      apitpstat[pitIdx].l++;
+      game->home.p_pstat[pitIdx].w++;
+      game->away.p_pstat[pitIdx].l++;
    }
 
    printf("Game: %d\n", g+1);
    linescore(i,aName,hName,ahiP,ariP,ar,alo,hhiP,hriP,hr,hlo,g,awP,hwP);
-   boxscore(aName,abatstat,apitbstat,apitpstat,team,aTeamIdx);
-   boxscore(hName,hbatstat,hpitbstat,hpitpstat,team,hTeamIdx);
+   boxscore(aName,&game->away,team,aTeamIdx);
+   boxscore(hName,&game->home,team,hTeamIdx);
+
    free(ahiP);
    free(ariP);
    free(hhiP);
