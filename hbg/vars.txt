@@ -1,5 +1,71 @@
 variables used in engine.c
 
+initialize:
+   time()
+   printf()
+   srand()
+
+addstat:
+   int i
+   int ip_f
+
+game_result:
+
+matchset:
+   int i
+   struct game_data gamestat
+
+   match()
+   addstat()
+   game_result()
+   boxscore()
+
+   memset()
+   printf()
+
+readvals:
+   char inbuf[132]
+   char *pInbuf
+   char inValsBuf[132]
+   int n1
+   int n2
+
+   fgets()
+   assert()
+   printf()
+   sscanf()
+
+read_num_teams:
+   char inbuf[132]
+   char *pInbuf
+   char inValsBuf[132]
+   int n1
+   int n2
+   int nTeams
+
+   fgets()
+   assert()
+   printf()
+   sscanf()
+
+read_team_names:
+   char inbuf[132]
+   char *pInbuf;
+   char inValsBuf[132]
+   char teamName[64]
+   int i
+   int n1
+   int n2
+   size_t teamNameL
+
+   fgets()
+   assert()
+   printf()
+   sscanf()
+   strlen()
+   strncpy()
+   malloc()
+
 main:
    struct team_data   team[NUM_TEAMS] = { 0 };
    struct league_data league[NUM_LEAGUES] = { 0 };
@@ -11,9 +77,13 @@ main:
 
    test_advance()
    initialize()
+   read_num_teams()
+   read_team_names()
    readvals()
    matchset()
 
+   realloc()
+   memset()
    atoi()
    fprintf()
    printf()

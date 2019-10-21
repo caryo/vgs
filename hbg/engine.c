@@ -11,9 +11,15 @@
 #define NUM_TEAMS    2
 #define NUM_LEAGUES  1
 
+#define TEAM1 "Blue"
+#define TEAM2 "Red"
+
 void   initialize(int seed);
 void   addstat(struct team_data *g, struct team_data *s, int nBat, int nPit);
+void   game_result(struct game_data *game, struct team_data team[]);
 void   matchset(int n, struct team_data team[], struct league_data league[]);
+void   read_num_teams(int *nTeamsP);
+void   read_team_names(int nTeams, struct team_data team[]);
 void   readvals(struct batdata *dataP);
 
 void initialize(int seed) {
@@ -76,35 +82,112 @@ void addstat(struct team_data *g, struct team_data *s, int nBat, int nPit) {
    }
 }
 
+void game_result(struct game_data *game, struct team_data team[]) {
+   if (game->winIdx == game->aTeamIdx) {
+      team[game->aTeamIdx].w++;
+      team[game->hTeamIdx].l++;
+   }
+   else {
+      team[game->hTeamIdx].w++;
+      team[game->aTeamIdx].l++;
+   }
+}
+
 void matchset(int n, struct team_data team[], struct league_data league[]) {
-   int i, aw = 0, hw = 0;
+   int i;
    struct game_data gamestat;
 
    for (i=0; i<n; i++) {
+      memset(&gamestat, 0, sizeof(struct game_data));
       if (i%2 == 0) {
-         memset(&gamestat, 0, sizeof(struct game_data));
          gamestat.aTeamIdx = 0;
          gamestat.aLeagueIdx = 0;
          gamestat.hTeamIdx = 1;
          gamestat.hLeagueIdx = 0;
-         match(i, "Blue", "Red", team, league, &gamestat, &aw, &hw);
-         addstat(&gamestat.away, &team[0], NUM_BATTERS, NUM_PITCHERS);
-         addstat(&gamestat.home, &team[1], NUM_BATTERS, NUM_PITCHERS);
       }
       else {
-         memset(&gamestat, 0, sizeof(struct game_data));
          gamestat.aTeamIdx = 1;
          gamestat.aLeagueIdx = 0;
          gamestat.hTeamIdx = 0;
          gamestat.hLeagueIdx = 0;
-         match(i, "Red", "Blue", team, league, &gamestat, &hw, &aw);
-         addstat(&gamestat.home, &team[0], NUM_BATTERS, NUM_PITCHERS);
-         addstat(&gamestat.away, &team[1], NUM_BATTERS, NUM_PITCHERS);
       }
+      match(i, team, league, &gamestat);
+      addstat(&gamestat.away, &team[gamestat.aTeamIdx], NUM_BATTERS, NUM_PITCHERS);
+      addstat(&gamestat.home, &team[gamestat.hTeamIdx], NUM_BATTERS, NUM_PITCHERS);
+      game_result(&gamestat, team);
    }
    printf("\n");
-   boxscore("Blue", &team[0], NULL, 0);
-   boxscore("Red", &team[1], NULL, 0);
+   boxscore(&team[0], NULL, 0);
+   boxscore(&team[1], NULL, 0);
+}
+
+void read_num_teams(int *nTeamsP) {
+   char inbuf[132], *pInbuf;
+   char inValsBuf[132] = { 0 };
+   int n1, n2, nTeams;
+
+   pInbuf = fgets(inbuf,sizeof(inbuf),stdin);
+   assert(pInbuf);
+#if DEBUG
+   printf("inbuf:%s\n", inbuf);
+#endif
+   n1 = sscanf(pInbuf,"%s\n",inValsBuf);
+#if DEBUG
+   printf("n1:%d\n", n1);
+#endif
+   assert(n1 == 1);
+#if DEBUG
+   printf("inValsBuf:%s\n", inValsBuf);
+#endif
+   n2 = sscanf(inValsBuf,"nTeams:%d\n", &nTeams);
+#if DEBUG
+   printf("n2:%d\n", n2);
+#endif
+   assert(n2 == 1);
+#if DEBUG
+   printf("nTeams:%d\n", nTeams);
+#endif
+   *nTeamsP = nTeams;
+}
+
+void read_team_names(int nTeams, struct team_data team[]) {
+   char inbuf[132], *pInbuf;
+   char inValsBuf[132] = { 0 };
+   char teamName[64] = { 0 };
+   int i, n1, n2;
+   size_t teamNameL;
+
+   for (i=0; i<nTeams; i++) {
+      pInbuf = fgets(inbuf,sizeof(inbuf),stdin);
+      assert(pInbuf);
+#if DEBUG
+      printf("inbuf:%s\n", inbuf);
+#endif
+      n1 = sscanf(pInbuf,"%s\n",inValsBuf);
+#if DEBUG
+      printf("n1:%d\n", n1);
+#endif
+      assert(n1 == 1);
+#if DEBUG
+      printf("inValsBuf:%s\n", inValsBuf);
+#endif
+      n2 = sscanf(inValsBuf,"teamName:%s\n", teamName);
+#if DEBUG
+      printf("n2:%d\n", n2);
+#endif
+      assert(n2 == 1);
+      teamNameL = strlen(teamName);
+#if DEBUG
+      printf("teamName:%s, strlen(teamName):%d\n", teamName, (int) teamNameL);
+#endif
+      team[i].name = malloc(sizeof(char)*(teamNameL+1));
+      assert(team[i].name != NULL);
+      strncpy(team[i].name,teamName,teamNameL);
+      team[i].name[teamNameL] = '\0';
+#if DEBUG
+      printf("team[%d].name:%s\n", i, team[i].name);
+#endif
+   }
 }
 
 void readvals(struct batdata *dataP) {
@@ -142,11 +225,18 @@ void readvals(struct batdata *dataP) {
 }
 
 int main(int argc, char *argv[]) {
-   struct team_data   team[NUM_TEAMS] = { 0 };
+   struct team_data  *team = NULL;
    struct league_data league[NUM_LEAGUES] = { 0 };
+   int nTeams = 0;
+
+   nTeams = NUM_TEAMS;
+   team = malloc(sizeof(struct team_data) * nTeams);
+   assert(team != NULL);
+   memset(team, 0, sizeof(struct team_data) * nTeams);
+   team[0].name = TEAM1;
+   team[1].name = TEAM2;
 
    if (argc > 1) {
-
       int v = atoi(argv[1]);
       if (v == -1) {
          test_advance(argc, argv);
@@ -158,13 +248,20 @@ int main(int argc, char *argv[]) {
             int i, j;
 
             fprintf(stderr,"reading values from standard input\n");
-            for (j=0; j<NUM_TEAMS; j++) {
+            read_num_teams(&nTeams);
+            printf("nTeams:%d\n", nTeams);
+            if (nTeams > 2) {
+               team = realloc(team,sizeof(struct team_data) * nTeams);
+               assert(team != NULL);
+            }
+            read_team_names(nTeams, team);
+            for (j=0; j<nTeams; j++) {
                for (i=0; i<NUM_BATTERS; i++) {
                   readvals(&(team[j].bat[i]));
                }
             }
             readvals(&(league[0].bat));
-            for (j=0; j<NUM_TEAMS; j++) {
+            for (j=0; j<nTeams; j++) {
                for (i=0; i<NUM_PITCHERS; i++) {
                   readvals(&(team[j].pit[i]));
                }

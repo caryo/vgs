@@ -470,7 +470,7 @@ void side(struct probdata p[], int n,
       }
 
       printf("%02d (%d): i:%-2d o:%d gdp:%d rlo:%d rbi:%d rs:%d z:%-2d rc:%2s, ob[0]:%2d ob[1]:%2d ob[2]:%2d\n",
-        *li, idx, i+1, o, gdp, rlo, rbi, rs, z, result_code(z), ob[0], ob[1], ob[2]);
+        *li, idx, i, o, gdp, rlo, rbi, rs, z, result_code(z), ob[0], ob[1], ob[2]);
       stat(batstat,idx,z,gdp,rbi,rlo);
       stat(pitbstat,pitIdx,z,gdp,rbi,rlo);
 

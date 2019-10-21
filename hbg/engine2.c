@@ -232,16 +232,16 @@ void clearmem(int idx, int c, int ahiP[], int ariP[], int hhiP[], int hriP[]) {
 
 void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, int alo,
                int hhiP[], int hriP[], int hr, int hlo,
-               int g, int *awP, int *hwP)
+               int g, int aw, int hw)
 {
    int ah = 0, hh = 0;
    int in = i+1;
 
    if (ar > hr) {
-      (*awP)++;
+      aw++;
    }
    else if (hr > ar) {
-      (*hwP)++;
+      hw++;
    }
 
    printf("%-20s","Team:");
@@ -253,7 +253,7 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
    }
    printf("%5c %2c %2c %5s\n", 'R', 'H', 'E', "LOB");
 
-   printf("%-8s (%3d-%3d): ", aName, *awP, ((g+1)-*awP));
+   printf("%-8s (%3d-%3d): ", aName, aw, ((g+1)-aw));
    for (i=0; i<in; i++) {
       printf("%2d ", ariP[i]);
       if (((i+1) % 3) == 0) {
@@ -262,7 +262,7 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
       ah = ah + ahiP[i];
    }
    printf("%5d %2d %2d %5d\n", ar, ah, 0, alo);
-   printf("%-8s (%3d-%3d): ", hName, *hwP, ((g+1)-*hwP));
+   printf("%-8s (%3d-%3d): ", hName, hw, ((g+1)-hw));
    for (i=0; i<in; i++) {
       if (i>=8 && hriP[i] == -1) {
          printf("%2c ", 'x');
@@ -278,7 +278,7 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
    printf("%5d %2d %2d %5d\n", hr, hh, 0, hlo);
 }
 
-void boxscore(char *name, struct team_data *game,
+void boxscore(struct team_data *game,
               struct team_data team[], int teamIdx)
 {
    int i;
@@ -289,7 +289,12 @@ void boxscore(char *name, struct team_data *game,
    int w, l, ip, ip_f;
 
    pa=0; ab=0; r=0; h=0; rbi=0; bb=0; so=0; lob=0; s=0; d=0; t=0; hr=0; gdp=0; hbp=0; sf=0;
-   printf("%s Team:\n", name);
+   if (team) {
+      printf("%s Team:\n", team[teamIdx].name);
+   }
+   else {
+      printf("%s Team:\n", game->name);
+   }
    printf("%4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %6s %6s %6s %6s\n",
      "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR",
      "GDP", "AVG", "SAVG", "OBP", "SOBP");
@@ -524,9 +529,8 @@ void boxscore(char *name, struct team_data *game,
       "TOT", pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, gavg, savg, ip, ip_f, w, l, era);
 }
 
-void match(int g, char *aName, char *hName,
-           struct team_data team[], struct league_data league[],
-           struct game_data *game, int *awP, int *hwP)
+void match(int g, struct team_data team[], struct league_data league[],
+           struct game_data *game)
 {
    int i = 0;
    int ar = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
@@ -595,8 +599,8 @@ void match(int g, char *aName, char *hName,
 
       probP = dfltp;
 
-      if ((team[aTeamIdx].bat[i].ab > 0 && team[hTeamIdx].pit[i].ab > 0) &&
-          (team[hTeamIdx].bat[i].ab > 0 && team[aTeamIdx].pit[i].ab > 0))
+      if ((team[aTeamIdx].bat[0].ab > 0 && team[hTeamIdx].pit[0].ab > 0) &&
+          (team[hTeamIdx].bat[0].ab > 0 && team[aTeamIdx].pit[0].ab > 0))
       {
          probP = team[aTeamIdx].batp;
       }
@@ -614,8 +618,8 @@ void match(int g, char *aName, char *hName,
 
       probP = dfltp;
 
-      if ((team[aTeamIdx].bat[i].ab > 0 && team[hTeamIdx].pit[i].ab > 0) &&
-          (team[hTeamIdx].bat[i].ab > 0 && team[aTeamIdx].pit[i].ab > 0))
+      if ((team[aTeamIdx].bat[0].ab > 0 && team[hTeamIdx].pit[0].ab > 0) &&
+          (team[hTeamIdx].bat[0].ab > 0 && team[aTeamIdx].pit[0].ab > 0))
       {
          probP = team[hTeamIdx].batp;
       }
@@ -643,16 +647,20 @@ void match(int g, char *aName, char *hName,
    if (ar > hr) {
       game->away.p_pstat[pitIdx].w++;
       game->home.p_pstat[pitIdx].l++;
+      game->winIdx = aTeamIdx;
    }
    else {
       game->home.p_pstat[pitIdx].w++;
       game->away.p_pstat[pitIdx].l++;
+      game->winIdx = hTeamIdx;
    }
 
    printf("Game: %d\n", g+1);
-   linescore(i,aName,hName,ahiP,ariP,ar,alo,hhiP,hriP,hr,hlo,g,awP,hwP);
-   boxscore(aName,&game->away,team,aTeamIdx);
-   boxscore(hName,&game->home,team,hTeamIdx);
+   linescore(i,team[aTeamIdx].name,team[hTeamIdx].name,
+             ahiP,ariP,ar,alo,hhiP,hriP,hr,hlo,g,
+             team[aTeamIdx].w, team[hTeamIdx].w);
+   boxscore(&game->away,team,aTeamIdx);
+   boxscore(&game->home,team,hTeamIdx);
 
    free(ahiP);
    free(ariP);

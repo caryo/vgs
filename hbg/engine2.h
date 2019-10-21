@@ -28,6 +28,9 @@ struct team_data {
    struct bstatdata b_stat[NUM_BATTERS];
    struct bstatdata p_bstat[NUM_PITCHERS];
    struct pstatdata p_pstat[NUM_PITCHERS];
+   int    w;
+   int    l;
+   char  *name;
 };
 
 struct game_data {
@@ -37,6 +40,7 @@ struct game_data {
    int aLeagueIdx;
    int hTeamIdx;
    int hLeagueIdx;
+   int winIdx;
 };
 
 struct league_data {
@@ -58,13 +62,11 @@ void   initrand(
 void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
 void   clearmem(int idx, int c, int ahiP[], int ariP[], int hhiP[], int hriP[]);
 void   linescore(int i, char *aName, char *hName, int ahiP[], int ariP[],
-                 int ar, int alo, int hhiP[],
-                 int hriP[], int hr, int hlo, int g, int *awP, int *hwP);
-void   boxscore(char *name, struct team_data *game,
+               int ar, int alo, int hhiP[],
+               int hriP[], int hr, int hlo, int g, int aw, int hw);
+void   boxscore(struct team_data *game,
                 struct team_data team[], int teamIdx);
-void   match(int g, char *aName, char *hName,
-             struct team_data team[], struct league_data league[],
-             struct game_data *game,
-             int *awP, int *hwP);
+void   match(int g, struct team_data team[], struct league_data league[],
+             struct game_data *game);
 
 #endif
