@@ -1,0 +1,2 @@
+notable games with input data from standard input:
+27 innings in game 2 (seed is 1571849560)

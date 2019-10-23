@@ -74,6 +74,7 @@ main:
    char *argv[] - array of string arguments passed in to the program
    int i- iterate through the number of teams NUM_TEAMS
    int j- iterate through the number of batters NUM_BATTERS and pitchers NUM_PITCHERS
+   int k- iterate through the number of teams during deallocation of memory
 
    test_advance()
    initialize()

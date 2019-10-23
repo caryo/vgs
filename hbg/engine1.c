@@ -432,6 +432,7 @@ void side(struct probdata p[], int n,
    do {
       a =  c;
 
+      assert((*li - li_base) < 400);
       idx = (*li - li_base) % 9;
 
 #if DEBUG

@@ -16,10 +16,10 @@ BUILD_FLAGS="" ./build.sh
 ./engine ${SEED} > /tmp/${PREFIX}_nodebug_nodice_nodata
 
 BUILD_FLAGS="-DDEBUG" ./build.sh
-./engine ${SEED} 0 < ./engine_data.txt > /tmp/${PREFIX}_debug_nodice_data
+./engine ${SEED} 0 < ./engine_data2.txt > /tmp/${PREFIX}_debug_nodice_data
 
 BUILD_FLAGS="" ./build.sh
-./engine ${SEED} 0 < ./engine_data.txt > /tmp/${PREFIX}_nodebug_nodice_data
+./engine ${SEED} 0 < ./engine_data2.txt > /tmp/${PREFIX}_nodebug_nodice_data
 
 if [ "${PREFIX}" = "t" ]; then
    if [ -f /tmp/t0_debug_dice_nodata ]; then

@@ -1,0 +1,12 @@
+#! /bin/sh
+
+gcc -Wall -Wstrict-prototypes -ansi -pedantic -o newproblem newproblem.c
+
+exit 0
+
+2 teams = 162 games : team A @ team B : 81, team B @ team A : 81
+
+3 teams = 162 games : team A @ team B : 41, team B @ team A : 41
+                      team A @ team C : 40, team C @ team A : 40
+                      team B @ team C : 40, team C @ team B : 40
+

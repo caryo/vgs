@@ -7,6 +7,7 @@
 #include "engine0.h"
 #include "engine1.h"
 #include "engine2.h"
+#include "engine3.h"
 
 #define NUM_TEAMS    2
 #define NUM_LEAGUES  1
@@ -17,7 +18,11 @@
 void   initialize(int seed);
 void   addstat(struct team_data *g, struct team_data *s, int nBat, int nPit);
 void   game_result(struct game_data *game, struct team_data team[]);
+#if 0
 void   matchset(int n, struct team_data team[], struct league_data league[]);
+#else
+void   matchset(int n, int nTeams, struct team_data team[], struct league_data league[]);
+#endif
 void   read_num_teams(int *nTeamsP);
 void   read_team_names(int nTeams, struct team_data team[]);
 void   readvals(struct batdata *dataP);
@@ -93,32 +98,57 @@ void game_result(struct game_data *game, struct team_data team[]) {
    }
 }
 
-void matchset(int n, struct team_data team[], struct league_data league[]) {
+void matchset(int n, int nTeams, struct team_data team[], struct league_data league[]) {
    int i;
    struct game_data gamestat;
+   void *matchP = NULL;
+   int x, y, done;
 
-   for (i=0; i<n; i++) {
+   match_create(nTeams, &matchP);
+   match_done(matchP, &done);
+
+#if 0
+   for (i=0; i<n; i++)
+#else
+   while(i<n)
+#endif
+   {
       memset(&gamestat, 0, sizeof(struct game_data));
       if (i%2 == 0) {
-         gamestat.aTeamIdx = 0;
+         match_getxy(matchP, &x, &y);
+         match_nextxy(matchP);
+         gamestat.aTeamIdx = y;
          gamestat.aLeagueIdx = 0;
-         gamestat.hTeamIdx = 1;
+         gamestat.hTeamIdx = x;
          gamestat.hLeagueIdx = 0;
       }
       else {
-         gamestat.aTeamIdx = 1;
+         gamestat.aTeamIdx = x;
          gamestat.aLeagueIdx = 0;
-         gamestat.hTeamIdx = 0;
+         gamestat.hTeamIdx = y;
          gamestat.hLeagueIdx = 0;
+         match_done(matchP, &done);
+         if (done) {
+            match_reset(matchP);
+            match_done(matchP,&done);
+         }
       }
       match(i, team, league, &gamestat);
       addstat(&gamestat.away, &team[gamestat.aTeamIdx], NUM_BATTERS, NUM_PITCHERS);
       addstat(&gamestat.home, &team[gamestat.hTeamIdx], NUM_BATTERS, NUM_PITCHERS);
       game_result(&gamestat, team);
+      i++;
+      if (done) break;
    }
    printf("\n");
-   boxscore(&team[0], NULL, 0);
-   boxscore(&team[1], NULL, 0);
+   for (i=0; i<nTeams; i++) {
+#if 0
+      boxscore(&team[0], NULL, 0);
+      boxscore(&team[1], NULL, 0);
+#else
+      boxscore(&team[i], NULL, 0);
+#endif
+   }
 }
 
 void read_num_teams(int *nTeamsP) {
@@ -180,8 +210,9 @@ void read_team_names(int nTeams, struct team_data team[]) {
 #if DEBUG
       printf("teamName:%s, strlen(teamName):%d\n", teamName, (int) teamNameL);
 #endif
-      team[i].name = malloc(sizeof(char)*(teamNameL+1));
-      assert(team[i].name != NULL);
+      team[i].nameBuf = malloc(sizeof(char)*(teamNameL+1));
+      assert(team[i].nameBuf != NULL);
+      team[i].name = team[i].nameBuf;
       strncpy(team[i].name,teamName,teamNameL);
       team[i].name[teamNameL] = '\0';
 #if DEBUG
@@ -228,6 +259,7 @@ int main(int argc, char *argv[]) {
    struct team_data  *team = NULL;
    struct league_data league[NUM_LEAGUES] = { 0 };
    int nTeams = 0;
+   int k;
 
    nTeams = NUM_TEAMS;
    team = malloc(sizeof(struct team_data) * nTeams);
@@ -269,10 +301,10 @@ int main(int argc, char *argv[]) {
             readvals(&(league[0].pit));
 
             printf("using input values to build probability tables\n");
-            matchset(162, team, league);
+            matchset(81*nTeams, nTeams, team, league);
 #else
             printf("using dice roll to build probability tables\n");
-            matchset(162, team, league);
+            matchset(162, nTeams, team, league);
 #endif
          }
          else {
@@ -281,7 +313,7 @@ int main(int argc, char *argv[]) {
 #else
             printf("using dice roll to build probability tables\n");
 #endif
-            matchset(162, team, league);
+            matchset(162, nTeams, team, league);
          }
       }
    }
@@ -292,8 +324,15 @@ int main(int argc, char *argv[]) {
 #else
       printf("using dice roll to build probability tables\n");
 #endif
-      matchset(162, team, league);
+      matchset(162, nTeams, team, league);
    }
+
+   for (k=0; k<nTeams; k++) {
+      if (team[k].nameBuf) {
+         free(team[k].nameBuf);
+      }
+   }
+   free(team);
 
    exit(0);
 }
