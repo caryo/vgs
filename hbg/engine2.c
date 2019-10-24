@@ -232,16 +232,18 @@ void clearmem(int idx, int c, int ahiP[], int ariP[], int hhiP[], int hriP[]) {
 
 void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, int alo,
                int hhiP[], int hriP[], int hr, int hlo,
-               int g, int aw, int hw)
+               int g, int aw, int al, int hw, int hl)
 {
    int ah = 0, hh = 0;
    int in = i+1;
 
    if (ar > hr) {
       aw++;
+      hl++;
    }
    else if (hr > ar) {
       hw++;
+      al++;
    }
 
    printf("%-20s","Team:");
@@ -252,8 +254,7 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
       }
    }
    printf("%5c %2c %2c %5s\n", 'R', 'H', 'E', "LOB");
-
-   printf("%-8s (%3d-%3d): ", aName, aw, ((g+1)-aw));
+   printf("%-8s (%3d-%3d): ", aName, aw, al);
    for (i=0; i<in; i++) {
       printf("%2d ", ariP[i]);
       if (((i+1) % 3) == 0) {
@@ -262,7 +263,7 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
       ah = ah + ahiP[i];
    }
    printf("%5d %2d %2d %5d\n", ar, ah, 0, alo);
-   printf("%-8s (%3d-%3d): ", hName, hw, ((g+1)-hw));
+   printf("%-8s (%3d-%3d): ", hName, hw, hl);
    for (i=0; i<in; i++) {
       if (i>=8 && hriP[i] == -1) {
          printf("%2c ", 'x');
@@ -540,7 +541,7 @@ void match(int g, struct team_data team[], struct league_data league[],
    int n = sizeof(dfltp[0].p)/sizeof(int);
    int c = 2;
    int alob = 0, hlob = 0;
-   int pitIdx = g % 6;
+   int pitIdx;
    int aTeamIdx, hTeamIdx;
    int aLeagueIdx, hLeagueIdx;
 
@@ -554,10 +555,12 @@ void match(int g, struct team_data team[], struct league_data league[],
       if ((team[aTeamIdx].bat[i].ab > 0 && team[hTeamIdx].pit[i].ab > 0) &&
           (team[hTeamIdx].bat[i].ab > 0 && team[aTeamIdx].pit[i].ab > 0))
       {
+         pitIdx = (team[hTeamIdx].w + team[hTeamIdx].l) % NUM_PITCHERS;
          initrand(
                   team, league,
                   aTeamIdx, aLeagueIdx, i,
                   hTeamIdx, hLeagueIdx, pitIdx);
+         pitIdx = (team[aTeamIdx].w + team[aTeamIdx].l) % NUM_PITCHERS;
          initrand(
                   team, league,
                   hTeamIdx, hLeagueIdx, i,
@@ -568,6 +571,7 @@ void match(int g, struct team_data team[], struct league_data league[],
       }
       else {
          int j;
+         pitIdx = g % 6;
          if (i==0) {
             defaultprob(dfltp[i].p);
 #if DEBUG
@@ -604,6 +608,7 @@ void match(int g, struct team_data team[], struct league_data league[],
       {
          probP = team[aTeamIdx].batp;
       }
+      pitIdx = (team[hTeamIdx].w + team[hTeamIdx].l) % NUM_PITCHERS;
       side(probP, n,
            i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, game->away.b_stat,
            game->home.p_bstat, game->home.p_pstat, pitIdx, &alob);
@@ -623,6 +628,7 @@ void match(int g, struct team_data team[], struct league_data league[],
       {
          probP = team[hTeamIdx].batp;
       }
+      pitIdx = (team[aTeamIdx].w + team[aTeamIdx].l) % NUM_PITCHERS;
       side(probP, n,
            i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, game->home.b_stat,
            game->away.p_bstat, game->away.p_pstat, pitIdx, &hlob);
@@ -645,12 +651,16 @@ void match(int g, struct team_data team[], struct league_data league[],
    while (1);
 
    if (ar > hr) {
+      pitIdx = (team[aTeamIdx].w + team[aTeamIdx].l) % NUM_PITCHERS;
       game->away.p_pstat[pitIdx].w++;
+      pitIdx = (team[hTeamIdx].w + team[hTeamIdx].l) % NUM_PITCHERS;
       game->home.p_pstat[pitIdx].l++;
       game->winIdx = aTeamIdx;
    }
    else {
+      pitIdx = (team[hTeamIdx].w + team[hTeamIdx].l) % NUM_PITCHERS;
       game->home.p_pstat[pitIdx].w++;
+      pitIdx = (team[aTeamIdx].w + team[aTeamIdx].l) % NUM_PITCHERS;
       game->away.p_pstat[pitIdx].l++;
       game->winIdx = hTeamIdx;
    }
@@ -658,7 +668,8 @@ void match(int g, struct team_data team[], struct league_data league[],
    printf("Game: %d\n", g+1);
    linescore(i,team[aTeamIdx].name,team[hTeamIdx].name,
              ahiP,ariP,ar,alo,hhiP,hriP,hr,hlo,g,
-             team[aTeamIdx].w, team[hTeamIdx].w);
+             team[aTeamIdx].w, team[aTeamIdx].l,
+             team[hTeamIdx].w, team[hTeamIdx].l);
    boxscore(&game->away,team,aTeamIdx);
    boxscore(&game->home,team,hTeamIdx);
 

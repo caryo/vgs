@@ -18,11 +18,7 @@
 void   initialize(int seed);
 void   addstat(struct team_data *g, struct team_data *s, int nBat, int nPit);
 void   game_result(struct game_data *game, struct team_data team[]);
-#if 0
-void   matchset(int n, struct team_data team[], struct league_data league[]);
-#else
 void   matchset(int n, int nTeams, struct team_data team[], struct league_data league[]);
-#endif
 void   read_num_teams(int *nTeamsP);
 void   read_team_names(int nTeams, struct team_data team[]);
 void   readvals(struct batdata *dataP);
@@ -107,12 +103,14 @@ void matchset(int n, int nTeams, struct team_data team[], struct league_data lea
    match_create(nTeams, &matchP);
    match_done(matchP, &done);
 
-#if 0
-   for (i=0; i<n; i++)
-#else
-   while(i<n)
+#if DEBUG
+   printf("number of games initial for season: %d\n", n);
 #endif
-   {
+   n = ((n - (n % ((nTeams-1)*2))) / 2) * nTeams;
+#if DEBUG
+   printf("number of games adjusted for season: %d\n", n);
+#endif
+   while(i<n) {
       memset(&gamestat, 0, sizeof(struct game_data));
       if (i%2 == 0) {
          match_getxy(matchP, &x, &y);
@@ -142,12 +140,7 @@ void matchset(int n, int nTeams, struct team_data team[], struct league_data lea
    }
    printf("\n");
    for (i=0; i<nTeams; i++) {
-#if 0
-      boxscore(&team[0], NULL, 0);
-      boxscore(&team[1], NULL, 0);
-#else
       boxscore(&team[i], NULL, 0);
-#endif
    }
 }
 
@@ -301,7 +294,7 @@ int main(int argc, char *argv[]) {
             readvals(&(league[0].pit));
 
             printf("using input values to build probability tables\n");
-            matchset(81*nTeams, nTeams, team, league);
+            matchset(162, nTeams, team, league);
 #else
             printf("using dice roll to build probability tables\n");
             matchset(162, nTeams, team, league);
