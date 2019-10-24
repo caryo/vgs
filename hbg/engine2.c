@@ -230,8 +230,8 @@ void clearmem(int idx, int c, int ahiP[], int ariP[], int hhiP[], int hriP[]) {
    memset(hriP+idx,0,sizeof(int)*c);
 }
 
-void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, int alo,
-               int hhiP[], int hriP[], int hr, int hlo,
+void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, int alo, int apo,
+               int hhiP[], int hriP[], int hr, int hlo, int hpo,
                int g, int aw, int al, int hw, int hl)
 {
    int ah = 0, hh = 0;
@@ -253,7 +253,7 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
          printf(" ");
       }
    }
-   printf("%5c %2c %2c %5s\n", 'R', 'H', 'E', "LOB");
+   printf("%5c %2c %2c %5s %5s\n", 'R', 'H', 'E', "LOB", "PO");
    printf("%-8s (%3d-%3d): ", aName, aw, al);
    for (i=0; i<in; i++) {
       printf("%2d ", ariP[i]);
@@ -262,7 +262,7 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
       }
       ah = ah + ahiP[i];
    }
-   printf("%5d %2d %2d %5d\n", ar, ah, 0, alo);
+   printf("%5d %2d %2d %5d %5d\n", ar, ah, 0, alo, apo);
    printf("%-8s (%3d-%3d): ", hName, hw, hl);
    for (i=0; i<in; i++) {
       if (i>=8 && hriP[i] == -1) {
@@ -276,7 +276,7 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
          printf(" ");
       }
    }
-   printf("%5d %2d %2d %5d\n", hr, hh, 0, hlo);
+   printf("%5d %2d %2d %5d %5d\n", hr, hh, 0, hlo, hpo);
 }
 
 void boxscore(struct team_data *game,
@@ -534,13 +534,14 @@ void match(int g, struct team_data team[], struct league_data league[],
            struct game_data *game)
 {
    int i = 0;
-   int ar = 0, alo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
-   int hr = 0, hlo = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
+   int ar = 0, alo = 0, apo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
+   int hr = 0, hlo = 0, hpo = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
    struct probdata dfltp[NUM_BATTERS];
    struct probdata *probP;
    int n = sizeof(dfltp[0].p)/sizeof(int);
    int c = 2;
    int alob = 0, hlob = 0;
+   int aout = 0, hout = 0;
    int pitIdx;
    int aTeamIdx, hTeamIdx;
    int aLeagueIdx, hLeagueIdx;
@@ -611,9 +612,10 @@ void match(int g, struct team_data team[], struct league_data league[],
       pitIdx = (team[hTeamIdx].w + team[hTeamIdx].l) % NUM_PITCHERS;
       side(probP, n,
            i,0,0,&ariP[i], &ahiP[i], &ali, ali_base, game->away.b_stat,
-           game->home.p_bstat, game->home.p_pstat, pitIdx, &alob);
+           game->home.p_bstat, game->home.p_pstat, pitIdx, &alob, &hout);
       printf("i:%d, ariP[i]:%d, ahiP[i]:%d, alob:%d\n", i, ariP[i], ahiP[i], alob);
       alo = alo + alob;
+      hpo = hpo + hout;
       ar = ar + ariP[i];
       if (i>=8 && hr > ar) {
          hriP[i] = -1;
@@ -631,9 +633,10 @@ void match(int g, struct team_data team[], struct league_data league[],
       pitIdx = (team[aTeamIdx].w + team[aTeamIdx].l) % NUM_PITCHERS;
       side(probP, n,
            i,1,hr-ar,&hriP[i], &hhiP[i], &hli, hli_base, game->home.b_stat,
-           game->away.p_bstat, game->away.p_pstat, pitIdx, &hlob);
+           game->away.p_bstat, game->away.p_pstat, pitIdx, &hlob, &aout);
       printf("i:%d, hriP[i]:%d, hhiP[i]:%d, hlob:%d\n", i, hriP[i], hhiP[i], hlob);
       hlo = hlo + hlob;
+      apo = apo + aout;
       hr = hr + hriP[i];
       printf("end of side: bottom, i:%d, ar:%d, hr:%d\n", i, ar, hr);
 
@@ -667,7 +670,7 @@ void match(int g, struct team_data team[], struct league_data league[],
 
    printf("Game: %d\n", g+1);
    linescore(i,team[aTeamIdx].name,team[hTeamIdx].name,
-             ahiP,ariP,ar,alo,hhiP,hriP,hr,hlo,g,
+             ahiP,ariP,ar,alo,apo,hhiP,hriP,hr,hlo,hpo,g,
              team[aTeamIdx].w, team[aTeamIdx].l,
              team[hTeamIdx].w, team[hTeamIdx].l);
    boxscore(&game->away,team,aTeamIdx);

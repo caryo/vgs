@@ -408,7 +408,7 @@ void stat(struct bstatdata stats[], int idx, int result, int gdp, int rbi, int l
 void side(struct probdata p[], int n,
           int i, int b, int d, int *r, int *h, int *li,
           int li_base, struct bstatdata batstat[], struct bstatdata pitbstat[],
-          struct pstatdata pitpstat[], int pitIdx, int *lob)
+          struct pstatdata pitpstat[], int pitIdx, int *lob, int *out)
 {
    int j;
    int z;
@@ -492,6 +492,7 @@ void side(struct probdata p[], int n,
    else {
       pitpstat[pitIdx].ip += 1;
    }
+   *out = o;
 
    *lob = 0;
    for (j=0; j<3; j++) {

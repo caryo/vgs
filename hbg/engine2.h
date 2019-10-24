@@ -63,8 +63,8 @@ void   initrand(
 void   initmem(int c, int *ahiP[], int *ariP[], int *hhiP[], int *hriP[]);
 void   clearmem(int idx, int c, int ahiP[], int ariP[], int hhiP[], int hriP[]);
 void   linescore(int i, char *aName, char *hName, int ahiP[], int ariP[],
-               int ar, int alo, int hhiP[],
-               int hriP[], int hr, int hlo, int g, int aw, int al,
+               int ar, int alo, int apo, int hhiP[],
+               int hriP[], int hr, int hlo, int hpo, int g, int aw, int al,
                int hw, int hl);
 void   boxscore(struct team_data *game,
                 struct team_data team[], int teamIdx);

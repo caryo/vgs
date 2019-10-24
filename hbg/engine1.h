@@ -42,6 +42,6 @@ void   stat(struct bstatdata stats[], int idx, int result, int gdp, int rbi, int
 void   side(struct probdata p[], int n,
             int i, int b, int d, int *r, int *h, int *li,
             int li_base, struct bstatdata batstat[], struct bstatdata pitbstat[],
-            struct pstatdata pitpstat[], int pitIdx, int *lob);
+            struct pstatdata pitpstat[], int pitIdx, int *lob, int *out);
 
 #endif
