@@ -653,6 +653,15 @@ void match(int g, struct team_data team[], struct league_data league[],
    }
    while (1);
 
+   game->away.pa = ali - ali_base;
+   game->away.r = ar;
+   game->away.lob = alo;
+   game->away.po = apo;
+   game->home.pa = hli - hli_base;
+   game->home.r = hr;
+   game->home.lob = hlo;
+   game->home.po = hpo;
+
    if (ar > hr) {
       pitIdx = (team[aTeamIdx].w + team[aTeamIdx].l) % NUM_PITCHERS;
       game->away.p_pstat[pitIdx].w++;

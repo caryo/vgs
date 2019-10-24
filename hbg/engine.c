@@ -84,6 +84,7 @@ void addstat(struct team_data *g, struct team_data *s, int nBat, int nPit) {
 }
 
 void game_result(struct game_data *game, struct team_data team[]) {
+   int total;
    if (game->winIdx == game->aTeamIdx) {
       team[game->aTeamIdx].w++;
       team[game->hTeamIdx].l++;
@@ -92,6 +93,28 @@ void game_result(struct game_data *game, struct team_data team[]) {
       team[game->hTeamIdx].w++;
       team[game->aTeamIdx].l++;
    }
+   total = game->away.r + game->away.lob + game->home.po;
+#if DEBUG
+   printf("away- pa:%d = r:%d + lob:%d + po:%d ( total:%d )\n",
+      game->away.pa, game->away.r, game->away.lob, game->home.po, total);
+#endif
+   assert(game->away.pa == total);
+   total = game->home.r + game->home.lob + game->away.po;
+#if DEBUG
+   printf("home- pa:%d = r:%d + lob:%d + po:%d ( total:%d )\n",
+      game->home.pa, game->home.r, game->home.lob, game->away.po, total);
+#endif
+   assert(game->home.pa == total);
+
+   team[game->aTeamIdx].pa += game->away.pa;
+   team[game->aTeamIdx].r += game->away.r;
+   team[game->aTeamIdx].lob += game->away.lob;
+   team[game->aTeamIdx].po += game->away.po;
+
+   team[game->hTeamIdx].pa += game->home.pa;
+   team[game->hTeamIdx].r += game->home.r;
+   team[game->hTeamIdx].lob += game->home.lob;
+   team[game->hTeamIdx].po += game->home.po;
 }
 
 void matchset(int n, int nTeams, struct team_data team[], struct league_data league[]) {
@@ -139,8 +162,16 @@ void matchset(int n, int nTeams, struct team_data team[], struct league_data lea
       if (done) break;
    }
    printf("\n");
+#if DEBUG
+   printf("season_result: %-15s %3s %3s %4s %4s %4s %4s\n",
+          "Team", "W", "L", "PA", "R", "LOB", "PO");
+#endif
    for (i=0; i<nTeams; i++) {
       boxscore(&team[i], NULL, 0);
+#if DEBUG
+      printf("season_result: %-15s %3d %3d %4d %4d %4d %4d\n", team[i].name, team[i].w, team[i].l,
+        team[i].pa, team[i].r, team[i].lob, team[i].po);
+#endif
    }
 }
 

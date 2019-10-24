@@ -10,6 +10,10 @@ addstat:
    int ip_f
 
 game_result:
+   int total
+
+   assert()
+   printf()
 
 matchset:
    int i

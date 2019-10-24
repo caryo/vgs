@@ -212,18 +212,6 @@ int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int 
       break;
    }
 
-   if (x < 0) {
-      int j;
-      for (j=0; j<3; j++) {
-         if (ob[j] >= 0) {
-            (*rlo)++;
-#if DEBUG
-            printf("z:%d, x:%d, j:%d, ob[%d]:%d, rlo:%d\n", z, x, j, j, ob[j], *rlo);
-#endif
-         }
-      }
-   }
-
    if (w == 1) {
       int j;
 #if DEBUG
@@ -306,13 +294,14 @@ int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int 
                offbase(ob);
 #endif
             }
-            if (*rlo > 0) {
-               (*rlo)--;
-            }
+
             *o = *o + 1;
             if (*o < 3) {
                *o = *o + 1;
                *gdp = 1;
+            }
+            else {
+               onbase(ob,idx);
             }
          }
          else {
@@ -322,6 +311,17 @@ int result(int z, int a, int *o, int *h, int *r, int *c, int *gdp, int idx, int 
       else if (x == -1) {
          if (f == 0) {
             *o = *o + 1;
+         }
+      }
+      if (x < 0) {
+         int j;
+         for (j=0; j<3; j++) {
+            if (ob[j] >= 0) {
+               (*rlo)++;
+#if DEBUG
+               printf("z:%d, x:%d, j:%d, ob[%d]:%d, rlo:%d\n", z, x, j, j, ob[j], *rlo);
+#endif
+            }
          }
       }
    }

@@ -30,6 +30,10 @@ struct team_data {
    struct pstatdata p_pstat[NUM_PITCHERS];
    int    w;
    int    l;
+   int    pa;
+   int    r;
+   int    lob;
+   int    po;
    char  *nameBuf;
    char  *name;
 };
