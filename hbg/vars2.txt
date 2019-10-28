@@ -54,45 +54,18 @@ linescore:
 
    printf()
 
+static void setextrastat:
+static void finishextrastat:
+
 boxscore:
    int i
-   int pa
-   int ab
-   int r
-   int h
-   int rbi
-   int bb
-   int so
-   int lob
-   int s
-   int d
-   int t
-   int hr
-   int gdp
-   int hbp
-   int sf
-   int ab0
-   int h0
-   int bb0
-   int hbp0
-   int sf0
-   int t_ab0 = 0
-   int t_h0 = 0
-   int t_bb0 = 0
-   int t_hbp0 = 0
-   int t_sf0 = 0
-   double gavg = 0.
-   double savg = 0.
-   double gobp = 0.
-   double sobp = 0.
-   double era = 0.
-   double ipd
-   int w
-   int l
-   int ip
-   int ip_f
+   struct extrastat_t e
+
+   setextrastat()
+   finishextrastat()
 
    printf()
+   memset()
 
 match:
    int i

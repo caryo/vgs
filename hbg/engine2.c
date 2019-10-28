@@ -8,6 +8,44 @@
 #include "engine1.h"
 #include "engine2.h"
 
+struct extrastat_t {
+   int pa;
+   int ab;
+   int r;
+   int h;
+   int rbi;
+   int bb;
+   int so;
+   int lob;
+   int s;
+   int d;
+   int t;
+   int hr;
+   int gdp;
+   int hbp;
+   int sf;
+   int ab0;
+   int h0;
+   int bb0;
+   int hbp0;
+   int sf0;
+   int t_ab0;
+   int t_h0;
+   int t_bb0;
+   int t_hbp0;
+   int t_sf0;
+   double gavg;
+   double savg;
+   double gobp;
+   double sobp;
+   double era;
+   double ipd;
+   int w;
+   int l;
+   int ip;
+   int ip_f;
+};
+
 long myround(double x) {
    assert(x >= LONG_MIN-0.5);
    assert(x <= LONG_MAX+0.5);
@@ -279,17 +317,117 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
    printf("%5d %2d %2d %5d %5d\n", hr, hh, 0, hlo, hpo);
 }
 
-void boxscore(struct team_data *game,
-              struct team_data team[], int teamIdx)
-{
-   int i;
-   int pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, hbp, sf;
-   int ab0, h0, bb0, hbp0, sf0;
-   int t_ab0 = 0, t_h0 = 0, t_bb0 = 0, t_hbp0 = 0, t_sf0 = 0;
-   double gavg = 0., savg = 0., gobp = 0., sobp = 0., era = 0., ipd;
-   int w, l, ip, ip_f;
+static void setextrastat(struct extrastat_t *e, struct bstatdata *b, struct bstatdata *t) {
+   if (b->ab > 0) {
+      e->gavg = (double) b->h / b->ab;
+   }
+   else {
+      e->gavg = 0.;
+   }
+   if (t) {
+      e->ab0 = t->ab;
+      e->h0 = t->h;
+      e->bb0 = t->bb;
+      e->hbp0 = t->hbp;
+      e->sf0 = t->sf;
+      e->t_ab0 += e->ab0;
+      e->t_h0 += e->h0;
+      e->t_bb0 += e->bb0;
+      e->t_hbp0 += e->hbp0;
+      e->t_sf0 += e->sf0;
+   }
+   else {
+      e->ab0 = 0;
+      e->h0 = 0;
+      e->bb0 = 0;
+      e->hbp0 = 0;
+      e->sf0 = 0;
+      e->t_ab0 = 0;
+      e->t_h0 = 0;
+      e->t_bb0 = 0;
+      e->t_hbp0 = 0;
+      e->t_sf0 = 0;
+   }
+   e->ab0 += b->ab;
+   e->h0 += b->h;
+   e->bb0 += b->bb;
+   e->hbp0 += b->hbp;
+   e->sf0 += b->sf;
+   if (e->ab0 > 0) {
+      e->savg = (double) e->h0 / e->ab0;
+   }
+   else {
+      e->savg = 0.;
+   }
+   if ((b->ab + b->bb + b->hbp + b->sf) > 0) {
+      e->gobp = (double) (b->h + b->bb + b->hbp) /
+        (b->ab + b->bb + b->hbp + b->sf);
+   }
+   else {
+      e->gobp = 0.;
+   }
+   if ((e->ab0 + e->bb0 + e->hbp0 + e->sf0) > 0) {
+      e->sobp = (double) (e->h0 + e->bb0 + e->hbp0) /
+        (e->ab0 + e->bb0 + e->hbp0 + e->sf0);
+   }
+   else {
+      e->sobp = 0.;
+   }
 
-   pa=0; ab=0; r=0; h=0; rbi=0; bb=0; so=0; lob=0; s=0; d=0; t=0; hr=0; gdp=0; hbp=0; sf=0;
+   e->pa  += b->pa;
+   e->ab  += b->ab;
+   e->r   += b->r;
+   e->h   += b->h;
+   e->rbi += b->rbi;
+   e->bb  += b->bb;
+   e->so  += b->so;
+   e->lob += b->lob;
+   e->s   += b->s;
+   e->d   += b->d;
+   e->t   += b->t;
+   e->hr  += b->hr;
+   e->gdp += b->gdp;
+}
+
+static void finishextrastat(struct extrastat_t *e) {
+   if (e->ab > 0) {
+      e->gavg = (double) e->h / e->ab;
+   }
+   else {
+      e->gavg = 0.;
+   }
+   if ((e->ab+e->bb+e->hbp+e->sf) > 0) {
+      e->gobp = (double) (e->h + e->bb + e->hbp) /
+        (e->ab + e->bb + e->hbp + e->sf);
+   }
+   else {
+      e->gobp = 0.;
+   }
+   e->ab0 = e->t_ab0 + e->ab;
+   e->h0 = e->t_h0 + e->h;
+   e->bb0 = e->t_bb0 + e->bb;
+   e->hbp0 = e->t_hbp0 + e->hbp;
+   e->sf0 = e->t_sf0 + e->sf;
+   if (e->ab0 > 0) {
+      e->savg = (double) e->h0 / e->ab0;
+   }
+   else {
+      e->savg = 0.;
+   }
+   if ((e->ab0 + e->bb0 + e->hbp0 + e->sf0) > 0) {
+      e->sobp = (double) (e->h0 + e->bb0 + e->hbp0) /
+        (e->ab0 + e->bb0 + e->hbp0 + e->sf0);
+   }
+   else {
+      e->sobp = 0.;
+   }
+}
+
+void boxscore(struct team_data *game, struct team_data team[], int teamIdx) {
+   int i;
+   struct extrastat_t e;
+
+   memset(&e,0,sizeof(struct extrastat_t));
    if (team) {
       printf("%s Team:\n", team[teamIdx].name);
    }
@@ -301,117 +439,25 @@ void boxscore(struct team_data *game,
      "GDP", "AVG", "SAVG", "OBP", "SOBP");
    for(i=0; i<NUM_BATTERS; i++) {
       struct bstatdata *batstat = game->b_stat;
-      if (batstat[i].ab > 0) {
-         gavg = (double) batstat[i].h / batstat[i].ab;
+      if (team) {
+         setextrastat(&e,&(batstat[i]),&(team[teamIdx].b_stat[i]));
       }
       else {
-         gavg = 0.;
-      }
-      if (team)
-      {
-         ab0 = team[teamIdx].b_stat[i].ab;
-         h0 = team[teamIdx].b_stat[i].h;
-         bb0 = team[teamIdx].b_stat[i].bb;
-         hbp0 = team[teamIdx].b_stat[i].hbp;
-         sf0 = team[teamIdx].b_stat[i].sf;
-         t_ab0 += ab0;
-         t_h0 += h0;
-         t_bb0 += bb0;
-         t_hbp0 += hbp0;
-         t_sf0 += sf0;
-      }
-      else {
-         ab0 = 0;
-         h0 = 0;
-         bb0 = 0;
-         hbp0 = 0;
-         sf0 = 0;
-         t_ab0 = 0;
-         t_h0 = 0;
-         t_bb0 = 0;
-         t_hbp0 = 0;
-         t_sf0 = 0;
-      }
-      ab0 += batstat[i].ab;
-      h0 += batstat[i].h;
-      bb0 += batstat[i].bb;
-      hbp0 += batstat[i].hbp;
-      sf0 += batstat[i].sf;
-      if (ab0 > 0) {
-         savg = (double) h0 / ab0;
-      }
-      else {
-         savg = 0.;
-      }
-      if ((batstat[i].ab + batstat[i].bb + batstat[i].hbp + batstat[i].sf) > 0) {
-         gobp = (double) (batstat[i].h + batstat[i].bb + batstat[i].hbp) /
-           (batstat[i].ab + batstat[i].bb + batstat[i].hbp + batstat[i].sf);
-      }
-      else {
-         gobp = 0.;
-      }
-      if ((ab0 + bb0 + hbp0 + sf0) > 0) {
-         sobp = (double) (h0 + bb0 + hbp0) / (ab0 + bb0 + hbp0 + sf0);
-      }
-      else {
-         sobp = 0.;
+         setextrastat(&e,&(batstat[i]),NULL);
       }
       printf("%4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %6.3f %6.3f %6.3f %6.3f\n",
          i+1, batstat[i].pa, batstat[i].ab, batstat[i].r, batstat[i].h, batstat[i].rbi,
          batstat[i].bb, batstat[i].so, batstat[i].lob, batstat[i].s, batstat[i].d,
-         batstat[i].t, batstat[i].hr, batstat[i].gdp, gavg, savg, gobp, sobp);
-      pa  += batstat[i].pa;
-      ab  += batstat[i].ab;
-      r   += batstat[i].r;
-      h   += batstat[i].h;
-      rbi += batstat[i].rbi;
-      bb  += batstat[i].bb;
-      so  += batstat[i].so;
-      lob += batstat[i].lob;
-      s   += batstat[i].s;
-      d   += batstat[i].d;
-      t   += batstat[i].t;
-      hr  += batstat[i].hr;
-      gdp += batstat[i].gdp;
+         batstat[i].t, batstat[i].hr, batstat[i].gdp, e.gavg, e.savg, e.gobp, e.sobp);
    }
 
-   if (ab > 0) {
-      gavg = (double) h / ab;
-   }
-   else {
-      gavg = 0.;
-   }
-   if ((ab+bb+hbp+sf) > 0) {
-      gobp = (double) (h + bb + hbp) / (ab + bb + hbp + sf);
-   }
-   else {
-      gobp = 0.;
-   }
-   ab0 = t_ab0 + ab;
-   h0 = t_h0 + h;
-   bb0 = t_bb0 + bb;
-   hbp0 = t_hbp0 + hbp;
-   sf0 = t_sf0 + sf;
-   if (ab0 > 0) {
-      savg = (double) h0 / ab0;
-   }
-   else {
-      savg = 0.;
-   }
-   if ((ab0 + bb0 + hbp0 + sf0) > 0) {
-      sobp = (double) (h0 + bb0 + hbp0) / (ab0 + bb0 + hbp0 + sf0);
-   }
-   else {
-      sobp = 0.;
-   }
+   finishextrastat(&e);
 
    printf("%-4s %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %6.3f %6.3f %6.3f %6.3f\n",
-      "TOT", pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, gavg, savg, gobp, sobp);
+      "TOT", e.pa, e.ab, e.r, e.h, e.rbi, e.bb, e.so, e.lob, e.s,
+      e.d, e.t, e.hr, e.gdp, e.gavg, e.savg, e.gobp, e.sobp);
 
-   pa=0; ab=0; r=0; h=0; rbi=0; bb=0; so=0; lob=0; s=0; d=0; t=0; hr=0; gdp=0; hbp=0; sf=0;
-   gavg = 0.; savg = 0.; w = 0; l = 0; ip = 0; ip_f = 0; era = 0.;
-
-   t_ab0 = 0; t_h0 = 0; t_bb0 = 0; t_hbp0 = 0; t_sf0 = 0;
+   memset(&e,0,sizeof(struct extrastat_t));
 
    printf("%4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %6s %6s %6s %7s %6s\n",
      "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR", "GDP",
@@ -419,117 +465,46 @@ void boxscore(struct team_data *game,
    for (i=0; i<NUM_PITCHERS; i++) {
       struct bstatdata *pitbstat = game->p_bstat;
       struct pstatdata *pitpstat = game->p_pstat;
-      if (pitbstat[i].ab > 0) {
-         gavg = (double) pitbstat[i].h / pitbstat[i].ab;
+      if (team) {
+         setextrastat(&e,&(pitbstat[i]),&(team[teamIdx].p_bstat[i]));
       }
       else {
-         gavg = 0.;
+         setextrastat(&e,&(pitbstat[i]),NULL);
       }
-      if (team)
-      {
-         ab0 = team[teamIdx].p_bstat[i].ab;
-         h0 = team[teamIdx].p_bstat[i].h;
-         bb0 = team[teamIdx].p_bstat[i].bb;
-         hbp0 = team[teamIdx].p_bstat[i].hbp;
-         sf0 = team[teamIdx].p_bstat[i].sf;
-         t_ab0 += ab0;
-         t_h0 += h0;
-         t_bb0 += bb0;
-         t_hbp0 += hbp0;
-         t_sf0 += sf0;
+      e.ipd = (double) pitpstat[i].ip + (double) pitpstat[i].ip_f / 3;
+      if (e.ipd > 0.) {
+         e.era = 9.0 * (pitbstat[i].r / e.ipd);
       }
       else {
-         ab0 = 0;
-         h0 = 0;
-         bb0 = 0;
-         hbp0 = 0;
-         sf0 = 0;
-         t_ab0 = 0;
-         t_h0 = 0;
-         t_bb0 = 0;
-         t_hbp0 = 0;
-         t_sf0 = 0;
-      }
-      ab0 += pitbstat[i].ab;
-      h0 += pitbstat[i].h;
-      bb0 += pitbstat[i].bb;
-      hbp0 += pitbstat[i].hbp;
-      sf0 += pitbstat[i].sf;
-      if (ab0 > 0) {
-         savg = (double) h0 / ab0;
-      }
-      else {
-         savg = 0.;
-      }
-      ipd = (double) pitpstat[i].ip + (double) pitpstat[i].ip_f / 3;
-      if (ipd > 0.) {
-         era = 9.0 * (pitbstat[i].r / ipd);
-      }
-      else {
-         era = 0.;
+         e.era = 0.;
       }
       printf("%4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %6.3f %6.3f %4d.%d %3d-%3d %6.2f\n",
          i+1, pitbstat[i].pa, pitbstat[i].ab, pitbstat[i].r, pitbstat[i].h, pitbstat[i].rbi,
          pitbstat[i].bb, pitbstat[i].so, pitbstat[i].lob, pitbstat[i].s, pitbstat[i].d,
-         pitbstat[i].t, pitbstat[i].hr, pitbstat[i].gdp, gavg, savg,
-         pitpstat[i].ip, pitpstat[i].ip_f, pitpstat[i].w, pitpstat[i].l, era);
+         pitbstat[i].t, pitbstat[i].hr, pitbstat[i].gdp, e.gavg, e.savg,
+         pitpstat[i].ip, pitpstat[i].ip_f, pitpstat[i].w, pitpstat[i].l, e.era);
 
-      pa  += pitbstat[i].pa;
-      ab  += pitbstat[i].ab;
-      r   += pitbstat[i].r;
-      h   += pitbstat[i].h;
-      rbi += pitbstat[i].rbi;
-      bb  += pitbstat[i].bb;
-      so  += pitbstat[i].so;
-      lob += pitbstat[i].lob;
-      s   += pitbstat[i].s;
-      d   += pitbstat[i].d;
-      t   += pitbstat[i].t;
-      hr  += pitbstat[i].hr;
-      gdp += pitbstat[i].gdp;
-
-      w += pitpstat[i].w;
-      l += pitpstat[i].l;
-      ip += pitpstat[i].ip;
-      ip_f += pitpstat[i].ip_f;
-      ip += ip_f / 3;
-      ip_f = ip_f % 3;
+      e.w += pitpstat[i].w;
+      e.l += pitpstat[i].l;
+      e.ip += pitpstat[i].ip;
+      e.ip_f += pitpstat[i].ip_f;
+      e.ip += e.ip_f / 3;
+      e.ip_f = e.ip_f % 3;
    }
 
-   if (ab > 0) {
-      gavg = (double) h / ab;
-   }
-   else {
-      gavg = 0.;
-   }
-   if ((ab+bb+hbp+sf) > 0) {
-      gobp = (double) (h + bb + hbp) / (ab + bb + hbp + sf);
-   }
-   else {
-      gobp = 0.;
-   }
-   ab0 = t_ab0 + ab;
-   h0 = t_h0 + h;
-   bb0 = t_bb0 + bb;
-   hbp0 = t_hbp0 + hbp;
-   sf0 = t_sf0 + sf;
-   if (ab0 > 0) {
-      savg = (double) h0 / ab0;
-   }
-   else {
-      savg = 0.;
-   }
+   finishextrastat(&e);
 
-   ipd = (double) ip + (double) ip_f / 3;
-   if (ipd > 0.) {
-      era = 9 * ((double) r / ipd);
+   e.ipd = (double) e.ip + (double) e.ip_f / 3;
+   if (e.ipd > 0.) {
+      e.era = 9 * ((double) e.r / e.ipd);
    }
    else {
-      era = 0.;
+      e.era = 0.;
    }
 
    printf("%-4s %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %4d %6.3f %6.3f %4d.%d %3d-%3d %6.2f\n",
-      "TOT", pa, ab, r, h, rbi, bb, so, lob, s, d, t, hr, gdp, gavg, savg, ip, ip_f, w, l, era);
+      "TOT", e.pa, e.ab, e.r, e.h, e.rbi, e.bb, e.so, e.lob, e.s, e.d, e.t, e.hr,
+      e.gdp, e.gavg, e.savg, e.ip, e.ip_f, e.w, e.l, e.era);
 }
 
 void match(int g, struct team_data team[], struct league_data league[],
