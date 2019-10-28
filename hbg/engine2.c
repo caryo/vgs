@@ -411,6 +411,8 @@ void boxscore(struct team_data *game,
    pa=0; ab=0; r=0; h=0; rbi=0; bb=0; so=0; lob=0; s=0; d=0; t=0; hr=0; gdp=0; hbp=0; sf=0;
    gavg = 0.; savg = 0.; w = 0; l = 0; ip = 0; ip_f = 0; era = 0.;
 
+   t_ab0 = 0; t_h0 = 0; t_bb0 = 0; t_hbp0 = 0; t_sf0 = 0;
+
    printf("%4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %4s %6s %6s %6s %7s %6s\n",
      "#", "PA", "AB", "R", "H", "RBI", "BB", "SO", "LOB", "S", "D", "T", "HR", "GDP",
      "AVG", "SAVG", "IP", "W-L", "ERA");
