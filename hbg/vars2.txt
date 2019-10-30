@@ -54,8 +54,15 @@ linescore:
 
    printf()
 
-static void setextrastat:
-static void finishextrastat:
+setextrastat:
+
+print_batheader:
+
+print_pitheader:
+
+print_batstat:
+
+print_pitstat:
 
 boxscore:
    int i

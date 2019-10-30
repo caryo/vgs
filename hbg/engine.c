@@ -12,8 +12,10 @@
 #define NUM_TEAMS    2
 #define NUM_LEAGUES  1
 
-#define TEAM1 "Blue"
-#define TEAM2 "Red"
+#define TEAM1          "Blue"
+#define TEAM1_NICKNAME "BLU"
+#define TEAM2          "Red"
+#define TEAM2_NICKNAME "RED"
 
 void   initialize(int seed);
 void   addstat(struct team_data *g, struct team_data *s, int nBat, int nPit);
@@ -22,6 +24,8 @@ void   matchset(int n, int nTeams, struct team_data team[], struct league_data l
 void   read_num_teams(int *nTeamsP);
 void   read_team_names(int nTeams, struct team_data team[]);
 void   readvals(struct batdata *dataP);
+void   batleaders(int nTeams, struct team_data team[], int nItems, int teamIdx[], int batIdx[]);
+void   pitleaders(int nTeams, struct team_data team[], int nItems, int teamIdx[], int pitIdx[]);
 
 void initialize(int seed) {
    if (seed < 0) {
@@ -122,6 +126,7 @@ void matchset(int n, int nTeams, struct team_data team[], struct league_data lea
    struct game_data gamestat;
    void *matchP = NULL;
    int x, y, done;
+   int teamIdList[NUM_BATTERS], batIdList[NUM_BATTERS], pitIdList[NUM_PITCHERS];
 
    match_create(nTeams, &matchP);
    match_done(matchP, &done);
@@ -173,6 +178,38 @@ void matchset(int n, int nTeams, struct team_data team[], struct league_data lea
         team[i].pa, team[i].r, team[i].lob, team[i].po);
 #endif
    }
+   batleaders(nTeams, team, NUM_BATTERS, teamIdList, batIdList); 
+   printf("batting leaders:\n");
+   print_batheader("Team");
+   for (i=0; i<NUM_BATTERS; i++) {
+      int teamIdx = teamIdList[i];
+      int batIdx = batIdList[i];
+      struct extrastat_t e;
+#if DEBUG
+      printf("teamIdx:%d batIdx:%d\n", teamIdx, batIdx);
+#endif
+      memset(&e,0,sizeof(struct extrastat_t));
+      setextrastat(&e,&(team[teamIdx].b_stat[batIdx]),NULL,NULL);
+      print_batstat(team[teamIdx].nickName,batIdx,
+        &(team[teamIdx].b_stat[batIdx]),&e);
+   }
+   pitleaders(nTeams, team, NUM_PITCHERS, teamIdList, pitIdList); 
+   printf("pitching leaders:\n");
+   print_pitheader("Team");
+   for (i=0; i<NUM_PITCHERS; i++) {
+      int teamIdx = teamIdList[i];
+      int pitIdx = pitIdList[i];
+      struct extrastat_t e;
+#if DEBUG
+      printf("teamIdx:%d pitIdx:%d\n", teamIdx, pitIdx);
+#endif
+      memset(&e,0,sizeof(struct extrastat_t));
+      setextrastat(&e,&(team[teamIdx].p_bstat[pitIdx]),NULL,
+        &(team[teamIdx].p_pstat[pitIdx]));
+      print_pitstat(team[teamIdx].nickName,pitIdx,
+        &(team[teamIdx].p_bstat[pitIdx]),
+        &(team[teamIdx].p_pstat[pitIdx]),&e);
+   }
 }
 
 void read_num_teams(int *nTeamsP) {
@@ -208,8 +245,10 @@ void read_team_names(int nTeams, struct team_data team[]) {
    char inbuf[132], *pInbuf;
    char inValsBuf[132] = { 0 };
    char teamName[64] = { 0 };
+   char nickName[32] = { 0 };
    int i, n1, n2;
    size_t teamNameL;
+   size_t nickNameL;
 
    for (i=0; i<nTeams; i++) {
       pInbuf = fgets(inbuf,sizeof(inbuf),stdin);
@@ -234,6 +273,28 @@ void read_team_names(int nTeams, struct team_data team[]) {
 #if DEBUG
       printf("teamName:%s, strlen(teamName):%d\n", teamName, (int) teamNameL);
 #endif
+      pInbuf = fgets(inbuf,sizeof(inbuf),stdin);
+      assert(pInbuf);
+#if DEBUG
+      printf("inbuf:%s\n", inbuf);
+#endif
+      n1 = sscanf(pInbuf,"%s\n",inValsBuf);
+#if DEBUG
+      printf("n1:%d\n", n1);
+#endif
+      assert(n1 == 1);
+#if DEBUG
+      printf("inValsBuf:%s\n", inValsBuf);
+#endif
+      n2 = sscanf(inValsBuf,"teamNickName:%s\n", nickName);
+#if DEBUG
+      printf("n2:%d\n", n2);
+#endif
+      assert(n2 == 1);
+      nickNameL = strlen(nickName);
+#if DEBUG
+      printf("teamNickName:%s, strlen(nickName):%d\n", nickName, (int) nickNameL);
+#endif
       team[i].nameBuf = malloc(sizeof(char)*(teamNameL+1));
       assert(team[i].nameBuf != NULL);
       team[i].name = team[i].nameBuf;
@@ -241,6 +302,14 @@ void read_team_names(int nTeams, struct team_data team[]) {
       team[i].name[teamNameL] = '\0';
 #if DEBUG
       printf("team[%d].name:%s\n", i, team[i].name);
+#endif
+      team[i].nickNameBuf = malloc(sizeof(char)*(nickNameL+1));
+      assert(team[i].nickNameBuf != NULL);
+      team[i].nickName = team[i].nickNameBuf;
+      strncpy(team[i].nickName,nickName,nickNameL);
+      team[i].nickName[nickNameL] = '\0';
+#if DEBUG
+      printf("team[%d].nickName:%s\n", i, team[i].nickName);
 #endif
    }
 }
@@ -279,6 +348,141 @@ void readvals(struct batdata *dataP) {
 #endif
 }
 
+struct sortdata_t {
+   int teamIdx;
+   int idx;
+   enum { SORTDATA_FVAL, SORTDATA_IVAL } t;
+   enum { SORT_ASC, SORT_DEC } dir;
+   union {
+      double fval;
+      int ival;
+   } d;
+};
+
+static int compare_sortdata(const void *aP, const void *bP) {
+   struct sortdata_t *a = (struct sortdata_t *) aP;
+   struct sortdata_t *b = (struct sortdata_t *) bP;
+   int c;
+
+   assert(a->t == b->t);
+   assert(a->dir == b->dir);
+
+   if (a->t == SORTDATA_FVAL) {
+      if (a->dir == SORT_DEC) {
+         if (a->d.fval > b->d.fval) {
+            c = -1;
+         }
+         else if (a->d.fval < b->d.fval) {
+            c = 1;
+         }
+         else {
+            c = 0;
+         }
+      }
+      else {
+         if (a->d.fval < b->d.fval) {
+            c = -1;
+         }
+         else if (a->d.fval > b->d.fval) {
+            c = 1;
+         }
+         else {
+            c = 0;
+         }
+      }
+   }
+   else {
+      if (a->dir == SORT_DEC) {
+         if (a->d.ival > b->d.ival) {
+            c = -1;
+         }
+         else if (a->d.ival < b->d.ival) {
+            c = 1;
+         }
+         else {
+            c = 0;
+         }
+      }
+      else {
+         if (a->d.ival < b->d.ival) {
+            c = -1;
+         }
+         else if (a->d.ival > b->d.ival) {
+            c = 1;
+         }
+         else {
+            c = 0;
+         }
+      }
+   }
+
+   return c;
+}
+
+void batleaders(int nTeams, struct team_data team[], int nItems, int teamIdx[], int batIdx[]) {
+   struct sortdata_t *data;
+   size_t dataL;
+   int i, j;
+   dataL = nTeams * NUM_BATTERS;
+   data = malloc(sizeof(struct sortdata_t)*dataL);
+   assert(data != NULL);
+   for (i=0; i<nTeams; i++) {
+      for (j=0; j<NUM_BATTERS; j++) {
+         int offset;
+         double avg;
+         avg = (double) team[i].b_stat[j].h / team[i].b_stat[j].ab;
+         offset = (i * NUM_BATTERS) + j;
+         assert(offset < dataL);
+#if DEBUG
+         printf("i:%d j:%d NUM_BATTERS:%d offset:%d\n", i, j, NUM_BATTERS, offset);
+#endif
+         data[offset].teamIdx = i;
+         data[offset].idx = j;
+         data[offset].t = SORTDATA_FVAL;
+         data[offset].dir = SORT_DEC;
+         data[offset].d.fval = avg;
+      }
+   }
+   qsort(data,dataL,sizeof(struct sortdata_t),compare_sortdata);
+   for (i=0; i<nItems; i++) {
+      teamIdx[i] = data[i].teamIdx;
+      batIdx[i] = data[i].idx;
+   }
+   free(data);
+}
+
+void pitleaders(int nTeams, struct team_data team[], int nItems, int teamIdx[], int pitIdx[]) {
+   struct sortdata_t *data;
+   size_t dataL;
+   int i, j;
+   dataL = nTeams * NUM_PITCHERS;
+   data = malloc(sizeof(struct sortdata_t)*dataL);
+   assert(data != NULL);
+   for (i=0; i<nTeams; i++) {
+      for (j=0; j<NUM_PITCHERS; j++) {
+         int offset;
+         double avg;
+         avg = (double) team[i].p_bstat[j].h / team[i].p_bstat[j].ab;
+         offset = (i * NUM_PITCHERS) + j;
+         assert(offset < dataL);
+#if DEBUG
+         printf("i:%d j:%d NUM_PITCHERS:%d offset:%d\n", i, j, NUM_PITCHERS, offset);
+#endif
+         data[offset].teamIdx = i;
+         data[offset].idx = j;
+         data[offset].t = SORTDATA_FVAL;
+         data[offset].dir = SORT_ASC;
+         data[offset].d.fval = avg;
+      }
+   }
+   qsort(data,dataL,sizeof(struct sortdata_t),compare_sortdata);
+   for (i=0; i<nItems; i++) {
+      teamIdx[i] = data[i].teamIdx;
+      pitIdx[i] = data[i].idx;
+   }
+   free(data);
+}
+
 int main(int argc, char *argv[]) {
    struct team_data  *team = NULL;
    struct league_data league[NUM_LEAGUES] = { 0 };
@@ -290,7 +494,9 @@ int main(int argc, char *argv[]) {
    assert(team != NULL);
    memset(team, 0, sizeof(struct team_data) * nTeams);
    team[0].name = TEAM1;
+   team[0].nickName = TEAM1_NICKNAME;
    team[1].name = TEAM2;
+   team[1].nickName = TEAM2_NICKNAME;
 
    if (argc > 1) {
       int v = atoi(argv[1]);

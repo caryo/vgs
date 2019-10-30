@@ -18,6 +18,13 @@ game_result:
 matchset:
    int i
    struct game_data gamestat
+   void *matchP = NULL
+   int x
+   int y
+   int done
+   int teamIdList[NUM_BATTERS]
+   int batIdList[NUM_BATTERS]
+   int pitIdList[NUM_PITCHERS]
 
    match()
    addstat()
@@ -54,13 +61,15 @@ read_num_teams:
 
 read_team_names:
    char inbuf[132]
-   char *pInbuf;
+   char *pInbuf
    char inValsBuf[132]
    char teamName[64]
+   char nickName[32]
    int i
    int n1
    int n2
    size_t teamNameL
+   size_t nickNameL
 
    fgets()
    assert()
@@ -69,6 +78,23 @@ read_team_names:
    strlen()
    strncpy()
    malloc()
+
+compare_sortdata:
+   struct sortdata_t *a
+   struct sortdata_t *b
+   int c
+
+batleaders:
+   struct sortdata_t *data
+   size_t dataL
+   int i
+   int j
+
+pitleaders:
+   struct sortdata_t *data
+   size_t dataL
+   int i
+   int j
 
 main:
    struct team_data   team[NUM_TEAMS] = { 0 };

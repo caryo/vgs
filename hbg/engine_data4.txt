@@ -1,8 +1,12 @@
 nTeams:4
 teamName:Blue
+teamNickName:BLU
 teamName:Red
+teamNickName:RED
 teamName:Green
+teamNickName:GRE
 teamName:Yellow
+teamNickName:YEL
 PA:366,AB:320,H:102,S:71,D:17,T:3,HR:11,BB:30,SO:39,GDP:2,HBP:4,SH:9,SF:3,OUT:177
 PA:509,AB:452,H:119,S:85,D:22,T:1,HR:11,BB:44,SO:102,GDP:5,HBP:6,SH:0,SF:7,OUT:226
 PA:504,AB:457,H:101,S:76,D:8,T:4,HR:13,BB:41,SO:74,GDP:12,HBP:0,SH:4,SF:2,OUT:270

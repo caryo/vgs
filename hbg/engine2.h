@@ -36,6 +36,8 @@ struct team_data {
    int    po;
    char  *nameBuf;
    char  *name;
+   char  *nickNameBuf;
+   char  *nickName;
 };
 
 struct game_data {
@@ -51,6 +53,44 @@ struct game_data {
 struct league_data {
    struct batdata   bat;
    struct batdata   pit;
+};
+
+struct extrastat_t {
+   int pa;
+   int ab;
+   int r;
+   int h;
+   int rbi;
+   int bb;
+   int so;
+   int lob;
+   int s;
+   int d;
+   int t;
+   int hr;
+   int gdp;
+   int hbp;
+   int sf;
+   int ab0;
+   int h0;
+   int bb0;
+   int hbp0;
+   int sf0;
+   int t_ab0;
+   int t_h0;
+   int t_bb0;
+   int t_hbp0;
+   int t_sf0;
+   double gavg;
+   double savg;
+   double gobp;
+   double sobp;
+   double era;
+   double ipd;
+   int w;
+   int l;
+   int ip;
+   int ip_f;
 };
 
 long   myround(double x);
@@ -70,6 +110,13 @@ void   linescore(int i, char *aName, char *hName, int ahiP[], int ariP[],
                int ar, int alo, int apo, int hhiP[],
                int hriP[], int hr, int hlo, int hpo, int g, int aw, int al,
                int hw, int hl);
+void   setextrastat(struct extrastat_t *e, struct bstatdata *b, struct bstatdata *t,
+                    struct pstatdata *p);
+void   print_batheader(char *nickName);
+void   print_pitheader(char *nickName);
+void   print_batstat(char *nickName,int i, struct bstatdata *bstat, struct extrastat_t *estat);
+void   print_pitstat(char *nickName, int i, struct bstatdata *bstat,
+                     struct pstatdata *pstat, struct extrastat_t *estat);
 void   boxscore(struct team_data *game,
                 struct team_data team[], int teamIdx);
 void   match(int g, struct team_data team[], struct league_data league[],

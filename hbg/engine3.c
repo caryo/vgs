@@ -41,20 +41,8 @@ void match_create(int nTeams, void **matchH) {
 
    matchP = malloc(sizeof(struct match_data));
    assert(matchP != NULL);
-#if 0
-   memset(matchP, 0, sizeof(struct match_data));
-#endif
    matchP->nTeams = nTeams;
-#if 0
-   matchP->x = 1;
-   matchP->y = 0;
-   matchP->z = 0;
-   matchP->i = 0;
-   matchP->j = 1;
-   matchP->done = 0;
-#else
    match_reset(matchP);
-#endif
 
    *matchH = matchP;
 }
