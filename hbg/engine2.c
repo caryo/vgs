@@ -510,7 +510,7 @@ void match(int g, struct team_data team[], struct league_data league[],
 {
    int i = 0;
    int ar = 0, alo = 0, apo = 0, ali_base = 100, ali = 100, *ahiP = NULL, *ariP = NULL;
-   int hr = 0, hlo = 0, hpo = 0, hli_base = 200, hli = 200, *hhiP = NULL, *hriP = NULL;
+   int hr = 0, hlo = 0, hpo = 0, hli_base = 600, hli = 600, *hhiP = NULL, *hriP = NULL;
    struct probdata dfltp[NUM_BATTERS];
    struct probdata *probP;
    int n = sizeof(dfltp[0].p)/sizeof(int);

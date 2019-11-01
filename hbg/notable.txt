@@ -1,2 +1,12 @@
 notable games with input data from standard input:
 27 innings in game 2 (seed is 1571849560)
+25 innings in game 54 (seed is 1572601416)
+23 innings in game 275 (seed is 1572602345)
+32 innings in game 572 (seed is 1572602509)
+38 innings in game 534 (seed is 1572604739)
+39 innings in game 890 (seed is 1572604918)
+42 innings in game 818 (seed is 1572605260)
+39 innings in game 260 (seed is 1572607152)
+50 innings in game 137 (seed is 1572607298)
+50 innings in game 265 (seed is 1513)
+52 innings in game 473 (seed is 3896)
