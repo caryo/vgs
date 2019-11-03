@@ -236,6 +236,10 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
 {
    int ah = 0, hh = 0;
    int in = i+1;
+   int start=0, stop, step=21;
+   int j;
+
+   assert(step % 3 == 0);
 
    if (ar > hr) {
       aw++;
@@ -246,37 +250,65 @@ void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, 
       al++;
    }
 
-   printf("%-20s","Team:");
-   for (i=0; i<in; i++) {
-      printf("%2d ", i+1);
-      if (((i+1) % 3) == 0) {
-         printf(" ");
+   for (j=0; j<in; j+=step) {
+      start=j;
+      stop=j+step;
+      if (stop > in) {
+         stop = in;
       }
-   }
-   printf("%5c %2c %2c %5s %5s\n", 'R', 'H', 'E', "LOB", "PO");
-   printf("%-8s (%3d-%3d): ", aName, aw, al);
-   for (i=0; i<in; i++) {
-      printf("%2d ", ariP[i]);
-      if (((i+1) % 3) == 0) {
-         printf(" ");
+
+      /* print header line */
+      printf("%-20s","Team:");
+      for (i=start; i<stop; i++) {
+         printf("%2d ", i+1);
+         if (((i+1) % 3) == 0) {
+            printf(" ");
+         }
       }
-      ah = ah + ahiP[i];
-   }
-   printf("%5d %2d %2d %5d %5d\n", ar, ah, 0, alo, apo);
-   printf("%-8s (%3d-%3d): ", hName, hw, hl);
-   for (i=0; i<in; i++) {
-      if (i>=8 && hriP[i] == -1) {
-         printf("%2c ", 'x');
+      if (stop == in) {
+         printf("%5c %2c %2c %5s %5s\n", 'R', 'H', 'E', "LOB", "PO");
       }
       else {
-         printf("%2d ", hriP[i]);
-         hh = hh + hhiP[i];
+         printf("\n");
       }
-      if (((i+1) % 3) == 0) {
-         printf(" ");
+
+      /* print away team line */
+      printf("%-8s (%3d-%3d): ", aName, aw, al);
+      for (i=start; i<stop; i++) {
+         printf("%2d ", ariP[i]);
+         if (((i+1) % 3) == 0) {
+            printf(" ");
+         }
+         ah = ah + ahiP[i];
+      }
+      if (stop == in) {
+         printf("%5d %2d %2d %5d %5d\n", ar, ah, 0, alo, apo);
+      }
+      else {
+         printf("\n");
+      }
+
+      /* print home team line */
+      printf("%-8s (%3d-%3d): ", hName, hw, hl);
+      for (i=start; i<stop; i++) {
+         if (i>=8 && hriP[i] == -1) {
+            printf("%2c ", 'x');
+         }
+         else {
+            printf("%2d ", hriP[i]);
+            hh = hh + hhiP[i];
+         }
+         if (((i+1) % 3) == 0) {
+            printf(" ");
+         }
+      }
+      if (stop == in) {
+         printf("%5d %2d %2d %5d %5d\n", hr, hh, 0, hlo, hpo);
+      }
+      else {
+         printf("\n");
       }
    }
-   printf("%5d %2d %2d %5d %5d\n", hr, hh, 0, hlo, hpo);
 }
 
 void setextrastat(struct extrastat_t *e, struct bstatdata *b, struct bstatdata *t,

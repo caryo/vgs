@@ -1,7 +1,9 @@
 #! /bin/sh
 
-# largest known values for thresh1 and thresh2 are 308 and 807, respectively (seed=3896)
-# continue using "SEED=-1 /bin/sh ./extra.sh 308 807"
+# largest known values for thresh1 and thresh2 are 324 and 830, respectively (seed=8235)
+# resulting in a game of 57 innings (see notable.txt)
+#
+# continue search using "SEED=-1 /bin/sh ./extra.sh 324 830"
 
 SEED=${SEED:--2}
 
@@ -18,7 +20,7 @@ shift
 thresh2=$1
 shift
 
-count=3896
+count=8875
 
 while true; do
    if [ $SEED -eq -1 ]; then

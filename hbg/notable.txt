@@ -10,3 +10,4 @@ notable games with input data from standard input:
 50 innings in game 137 (seed is 1572607298)
 50 innings in game 265 (seed is 1513)
 52 innings in game 473 (seed is 3896)
+57 innings in game 40 (seed is 8235)
