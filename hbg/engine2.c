@@ -232,7 +232,7 @@ void clearmem(int idx, int c, int ahiP[], int ariP[], int hhiP[], int hriP[]) {
 
 void linescore(int i, char *aName, char *hName, int ahiP[], int ariP[], int ar, int alo, int apo,
                int hhiP[], int hriP[], int hr, int hlo, int hpo,
-               int g, int aw, int al, int hw, int hl)
+               int aw, int al, int hw, int hl)
 {
    int ah = 0, hh = 0;
    int in = i+1;
@@ -686,7 +686,7 @@ void match(int g, struct team_data team[], struct league_data league[],
 
    printf("Game: %d\n", g+1);
    linescore(i,team[aTeamIdx].name,team[hTeamIdx].name,
-             ahiP,ariP,ar,alo,apo,hhiP,hriP,hr,hlo,hpo,g,
+             ahiP,ariP,ar,alo,apo,hhiP,hriP,hr,hlo,hpo,
              team[aTeamIdx].w, team[aTeamIdx].l,
              team[hTeamIdx].w, team[hTeamIdx].l);
    boxscore(&game->away,team,aTeamIdx);

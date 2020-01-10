@@ -122,7 +122,7 @@ void game_result(struct game_data *game, struct team_data team[]) {
 }
 
 void matchset(int n, int nTeams, struct team_data team[], struct league_data league[]) {
-   int i;
+   int i = 0;
    struct game_data gamestat;
    void *matchP = NULL;
    int x, y, done;
