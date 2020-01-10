@@ -1,3 +1,7 @@
+# make sure your Linux distribution has support for multilib for 32-bit execs:
+#
+# https://askubuntu.com/questions/470796/fatal-error-sys-cdefs-h-no-such-file-or-directory
+#
 # gcc hbg*.c -o hbg
 # gcc -DUSE_DICE -DDEBUG -Wall -Wstrict-prototypes -ansi -pedantic -o engine engine.c
 gcc -m32 -DDEBUG -Wall -Wstrict-prototypes -ansi -pedantic -c engine0.c
