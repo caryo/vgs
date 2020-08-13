@@ -38,4 +38,3 @@ void print_sample_play_results() {
       }
    }
 }
-
